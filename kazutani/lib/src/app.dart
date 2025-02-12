@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import 'screens/game_screen.dart';
 import 'settings/settings_controller.dart';
 
 import 'screens/home_screen.dart';
@@ -7,18 +8,22 @@ import 'routes.dart';
 
 class MyApp extends StatelessWidget {
   final SettingsController settingsController;
-
-  const MyApp({Key? key, required this.settingsController}) : super(key: key);
+  static final GlobalKey<NavigatorState> navigatorKey =
+      GlobalKey<NavigatorState>();
+  const MyApp({super.key, required this.settingsController});
 
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
+      navigatorKey: navigatorKey,
       initialRoute: AppRoutes.home,
       routes: {
-        AppRoutes.home: (context) => HomeScreen(),
-        // AppRoutes.game: (context) => GameScreen(),
-        // AppRoutes.settings: (context) => SettingsScreen(controller: settingsController),
+        '/': (context) => HomeScreen(),
+        '/game': (context) => GameScreen(),
       },
+      theme: ThemeData(
+        primarySwatch: Colors.blue,
+      ),
     );
   }
 }
