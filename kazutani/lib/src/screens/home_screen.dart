@@ -10,7 +10,7 @@ class HomeScreen extends StatelessWidget {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Text('Your Game Name', style: Theme.of(context).textTheme.headlineLarge),
+            Text('Kazutani', style: Theme.of(context).textTheme.headlineLarge),
             SizedBox(height: 40),
             ElevatedButton(
               onPressed: () => Navigator.pushNamed(context, '/game'),

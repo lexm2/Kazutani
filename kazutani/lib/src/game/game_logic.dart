@@ -1,12 +1,28 @@
 import 'dart:math';
 
+class ConflictPosition {
+  final int row;
+  final int col;
+  final int number;
+  final bool isOriginal;
+
+  ConflictPosition(this.row, this.col, this.number, this.isOriginal);
+}
+
+class ValidationResult {
+  final bool isValid;
+  final List<ConflictPosition> conflicts;
+
+  ValidationResult(this.isValid, this.conflicts);
+}
+
 class SudokuLogic {
   // Generate a valid Sudoku puzzle
-  List<List<int>> generatePuzzle(String difficulty) {
+  List<List<int>> generatePuzzle() {
     List<List<int>> grid = List.generate(9, (_) => List.filled(9, 0));
     _fillDiagonal(grid);
     _solveSudoku(grid);
-    _removeNumbers(grid, difficulty);
+    _removeNumbers(grid);
     return grid;
   }
 
@@ -76,8 +92,9 @@ class SudokuLogic {
     return true;
   }
 
-  void _removeNumbers(List<List<int>> grid, String difficulty) {
-    int numbersToRemove = _getDifficultyCount(difficulty);
+  void _removeNumbers(List<List<int>> grid) {
+    // TODO: Implement removal logic
+    int numbersToRemove = 30;
     Random random = Random();
 
     while (numbersToRemove > 0) {
@@ -91,22 +108,36 @@ class SudokuLogic {
     }
   }
 
-  int _getDifficultyCount(String difficulty) {
-    switch (difficulty) {
-      case 'easy':
-        return 30;
-      case 'medium':
-        return 40;
-      case 'hard':
-        return 50;
-      default:
-        return 30;
-    }
-  }
+  ValidationResult validateMove(List<List<int>> board, int row, int col,
+      int number, List<List<bool>> isOriginal) {
+    List<ConflictPosition> conflicts = [];
 
-  bool validateMove(List<List<int>> grid, int row, int col, int number) {
-    // Check if the move is valid according to Sudoku rules
-    return _isSafe(grid, row, col, number);
+    // Check row
+    for (int c = 0; c < 9; c++) {
+      if (board[row][c] == number) {
+        conflicts.add(ConflictPosition(row, c, number, isOriginal[row][c]));
+      }
+    }
+
+    // Check column
+    for (int r = 0; r < 9; r++) {
+      if (board[r][col] == number) {
+        conflicts.add(ConflictPosition(r, col, number, isOriginal[r][col]));
+      }
+    }
+
+    // Check 3x3 box
+    int boxRow = row - row % 3;
+    int boxCol = col - col % 3;
+    for (int r = boxRow; r < boxRow + 3; r++) {
+      for (int c = boxCol; c < boxCol + 3; c++) {
+        if (board[r][c] == number) {
+          conflicts.add(ConflictPosition(r, c, number, isOriginal[r][c]));
+        }
+      }
+    }
+
+    return ValidationResult(conflicts.isEmpty, conflicts);
   }
 
   bool isGameComplete(List<List<int>> grid) {

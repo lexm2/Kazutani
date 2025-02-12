@@ -6,9 +6,11 @@ class GameState extends ChangeNotifier {
   final SudokuLogic _logic = SudokuLogic();
   List<List<int>> board = List.generate(9, (_) => List.filled(9, 0));
   List<List<bool>> isOriginal = List.generate(9, (_) => List.filled(9, false));
+  List<List<Set<int>>> notes =
+      List.generate(9, (_) => List.generate(9, (_) => <int>{}));
+  bool isNoteMode = false;
   int selectedRow = -1;
   int selectedCol = -1;
-  String difficulty = 'easy';
   bool hasWon = false;
   int moveCount = 0;
   ValueNotifier<Duration> gameTime = ValueNotifier(Duration.zero);
@@ -23,16 +25,45 @@ class GameState extends ChangeNotifier {
     if (selectedRow != -1 &&
         selectedCol != -1 &&
         !isOriginal[selectedRow][selectedCol]) {
-      if (_logic.validateMove(board, selectedRow, selectedCol, number)) {
-        board[selectedRow][selectedCol] = number;
-        moveCount++;
-
-        if (_logic.isGameComplete(board)) {
-          hasWon = true;
-          _handleWin();
+      if (isNoteMode) {
+        if (notes[selectedRow][selectedCol].contains(number)) {
+          notes[selectedRow][selectedCol].remove(number);
+        } else {
+          notes[selectedRow][selectedCol].add(number);
         }
-        notifyListeners();
+      } else {
+        var validationResult = _logic.validateMove(
+            board, selectedRow, selectedCol, number, isOriginal);
+        if (validationResult.isValid) {
+          board[selectedRow][selectedCol] = number;
+          notes[selectedRow][selectedCol].clear();
+          moveCount++;
+
+          if (_logic.isGameComplete(board)) {
+            hasWon = true;
+            _handleWin();
+          }
+        } else if (validationResult.conflicts.isNotEmpty) {
+          notes[selectedRow][selectedCol].add(number);
+          for (var conflict in validationResult.conflicts) {
+            if (conflict.isOriginal) continue;
+            int previousNumber = board[conflict.row][conflict.col];
+            board[conflict.row][conflict.col] = 0;
+            notes[conflict.row][conflict.col].add(previousNumber);
+          }
+        }
       }
+      notifyListeners();
+    }
+  }
+
+  void clearCell() {
+    if (selectedRow != -1 &&
+        selectedCol != -1 &&
+        !isOriginal[selectedRow][selectedCol]) {
+      board[selectedRow][selectedCol] = 0;
+      notes[selectedRow][selectedCol].clear();
+      notifyListeners();
     }
   }
 
@@ -46,9 +77,9 @@ class GameState extends ChangeNotifier {
             children: [
               Text('You completed the puzzle!'),
               Text('Moves: $moveCount'),
-              Text('Difficulty: ${difficulty.toUpperCase()}'),
               SizedBox(height: 16),
-              Text('Game Time: ${gameTime.value.inMinutes}:${(gameTime.value.inSeconds.remainder(60)).toString().padLeft(2, '0')}'),
+              Text(
+                  'Game Time: ${gameTime.value.inMinutes}:${(gameTime.value.inSeconds.remainder(60)).toString().padLeft(2, '0')}'),
             ],
           ),
           actions: [
@@ -77,10 +108,12 @@ class GameState extends ChangeNotifier {
     moveCount = 0;
     hasWon = false;
     gameTime.value = Duration.zero;
+    notes = List.generate(9, (_) => List.generate(9, (_) => <int>{}));
+    notifyListeners();
   }
 
   void startNewGame() {
-    board = _logic.generatePuzzle(difficulty);
+    board = _logic.generatePuzzle();
     _setOriginalNumbers();
     notifyListeners();
   }
@@ -93,11 +126,11 @@ class GameState extends ChangeNotifier {
     }
   }
 
-  void setDifficulty(String newDifficulty) {
-    difficulty = newDifficulty;
-    startNewGame();
+  void toggleNoteMode() {
+    isNoteMode = !isNoteMode;
+    notifyListeners();
   }
-
+  
   void completeGameTest() {
     print('Starting game completion test');
 
@@ -124,7 +157,7 @@ class GameState extends ChangeNotifier {
 
       // Try digits 1-9
       for (int num = 1; num <= 9; num++) {
-        if (_logic.validateMove(board, row, col, num)) {
+        if (_logic.validateMove(board, row, col, num, isOriginal).isValid) {
           board[row][col] = num;
           selectedRow = row;
           selectedCol = col;
