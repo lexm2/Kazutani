@@ -8,7 +8,7 @@
 PRODUCT_NAME = kazutani
 
 // The application's bundle identifier
-PRODUCT_BUNDLE_IDENTIFIER = com.example.kazutani
+PRODUCT_BUNDLE_IDENTIFIER = com.kazutani
 
 // The copyright displayed in application information
-PRODUCT_COPYRIGHT = Copyright © 2025 com.example. All rights reserved.
+PRODUCT_COPYRIGHT = Copyright © 2025 com. All rights reserved.
