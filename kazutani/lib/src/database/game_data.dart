@@ -2,6 +2,7 @@ class GameData {
   final int? id;
   final String board;
   final String originalPositions;
+  final String notes;
   final int moveCount;
   final int createdAt;
   final int lastPlayedAt;
@@ -11,6 +12,7 @@ class GameData {
     this.id,
     required this.board,
     required this.originalPositions,
+    required this.notes,
     required this.moveCount,
     required this.createdAt,
     required this.lastPlayedAt,
@@ -22,6 +24,7 @@ class GameData {
       id: map['id'] as int?,
       board: map['board'] as String,
       originalPositions: map['original_positions'] as String,
+      notes: map['notes'] as String,
       moveCount: map['move_count'] as int,
       createdAt: map['created_at'] as int,
       lastPlayedAt: map['last_played_at'] as int,
@@ -34,6 +37,7 @@ class GameData {
       'id': id,
       'board': board,
       'original_positions': originalPositions,
+      'notes': notes,
       'move_count': moveCount,
       'created_at': createdAt,
       'last_played_at': lastPlayedAt,

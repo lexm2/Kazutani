@@ -142,6 +142,7 @@ class GameState extends ChangeNotifier {
     _dbHelper.saveGameState(
       board: board,
       originalPositions: isOriginal,
+      notes: notes,
       moveCount: moveCount,
     );
   }
@@ -149,26 +150,20 @@ class GameState extends ChangeNotifier {
   Future<void> loadLastGame() async {
     final GameData? gameData = await _dbHelper.loadLatestGame();
     if (gameData != null) {
-      String boardStr = gameData.board.replaceAll('[', '').replaceAll(']', '');
-      List<String> rows = boardStr.split(',');
+      final (loadedBoard, loadedOriginal, loadedNotes) =
+          GameSerializer.deserializeGameState(json.encode({
+        'board': gameData.board,
+        'original': gameData.originalPositions,
+        'notes': gameData.notes
+      }));
 
-      board = List.generate(
-          9, (i) => List.generate(9, (j) => int.parse(rows[i * 9 + j].trim())));
-
-      String originalStr =
-          gameData.originalPositions.replaceAll('[', '').replaceAll(']', '');
-      List<String> originalRows = originalStr.split(',');
-
-      isOriginal = List.generate(
-          9,
-          (i) => List.generate(
-              9, (j) => originalRows[i * 9 + j].trim() == 'true'));
-
+      board = loadedBoard;
+      isOriginal = loadedOriginal;
+      notes = loadedNotes;
       moveCount = gameData.moveCount;
       selectedRow = -1;
       selectedCol = -1;
       hasWon = false;
-      notes = List.generate(9, (_) => List.generate(9, (_) => <int>{}));
 
       notifyListeners();
     }

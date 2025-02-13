@@ -153,8 +153,9 @@ class GameScreenState extends State<GameScreen> {
                                 color: Theme.of(context)
                                     .colorScheme
                                     .onSurface
-                                    .withAlpha(20),
+                                    .withAlpha(80),
                                 fontSize: 10,
+                                fontWeight: FontWeight.bold,
                               ),
                             )
                           : null,
