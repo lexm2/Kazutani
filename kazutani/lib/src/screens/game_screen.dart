@@ -13,8 +13,13 @@ class GameScreenState extends State<GameScreen> {
   @override
   void initState() {
     super.initState();
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      context.read<GameState>().startNewGame();
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      final gameState = context.read<GameState>();
+      await gameState.loadLastGame();
+      if (gameState.board.every((row) => row.every((cell) => cell == 0))) {
+        // Only start new game if no saved game was loaded
+        gameState.startNewGame();
+      }
     });
   }
 
@@ -92,7 +97,7 @@ class GameScreenState extends State<GameScreen> {
     return GestureDetector(
       onTap: () => gameState.selectCell(row, col),
       child: AnimatedContainer(
-        duration: Duration(milliseconds: 200),
+        duration: Duration(milliseconds: 150),
         curve: Curves.easeInOut,
         decoration: BoxDecoration(
           color: isSelected
@@ -118,7 +123,7 @@ class GameScreenState extends State<GameScreen> {
           ),
         ),
         child: AnimatedSwitcher(
-          duration: Duration(milliseconds: 300),
+          duration: Duration(milliseconds: 150),
           transitionBuilder: (Widget child, Animation<double> animation) {
             return ScaleTransition(scale: animation, child: child);
           },

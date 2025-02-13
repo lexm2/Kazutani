@@ -1,9 +1,15 @@
+import '../database/database_helper.dart';
+import '../database/game_data.dart';
+import '../utils/game_serializer.dart';
+import 'dart:convert';
+
 import 'package:flutter/material.dart';
 import 'package:kazutani/src/app.dart';
 import 'game_logic.dart';
 
 class GameState extends ChangeNotifier {
   final SudokuLogic _logic = SudokuLogic();
+  final DatabaseHelper _dbHelper = DatabaseHelper();
   List<List<int>> board = List.generate(9, (_) => List.filled(9, 0));
   List<List<bool>> isOriginal = List.generate(9, (_) => List.filled(9, false));
   List<List<Set<int>>> notes =
@@ -53,6 +59,7 @@ class GameState extends ChangeNotifier {
           }
         }
       }
+      saveGame();
       notifyListeners();
     }
   }
@@ -130,7 +137,43 @@ class GameState extends ChangeNotifier {
     isNoteMode = !isNoteMode;
     notifyListeners();
   }
-  
+
+  void saveGame() {
+    _dbHelper.saveGameState(
+      board: board,
+      originalPositions: isOriginal,
+      moveCount: moveCount,
+    );
+  }
+
+  Future<void> loadLastGame() async {
+    final GameData? gameData = await _dbHelper.loadLatestGame();
+    if (gameData != null) {
+      String boardStr = gameData.board.replaceAll('[', '').replaceAll(']', '');
+      List<String> rows = boardStr.split(',');
+
+      board = List.generate(
+          9, (i) => List.generate(9, (j) => int.parse(rows[i * 9 + j].trim())));
+
+      String originalStr =
+          gameData.originalPositions.replaceAll('[', '').replaceAll(']', '');
+      List<String> originalRows = originalStr.split(',');
+
+      isOriginal = List.generate(
+          9,
+          (i) => List.generate(
+              9, (j) => originalRows[i * 9 + j].trim() == 'true'));
+
+      moveCount = gameData.moveCount;
+      selectedRow = -1;
+      selectedCol = -1;
+      hasWon = false;
+      notes = List.generate(9, (_) => List.generate(9, (_) => <int>{}));
+
+      notifyListeners();
+    }
+  }
+
   void completeGameTest() {
     print('Starting game completion test');
 

@@ -5,7 +5,6 @@ import 'screens/settings_screen.dart';
 import 'settings/settings_controller.dart';
 
 import 'screens/home_screen.dart';
-import 'routes.dart';
 
 class MyApp extends StatelessWidget {
   final SettingsController settingsController;
