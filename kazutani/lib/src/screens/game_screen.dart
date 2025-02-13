@@ -19,12 +19,25 @@ class GameScreenState extends State<GameScreen> {
   }
 
   @override
+  @override
   Widget build(BuildContext context) {
     final gameState = context.watch<GameState>();
 
     return Scaffold(
       appBar: AppBar(
-        title: Text('Game'),
+        title: Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Text('Game'),
+            Row(
+              children: [
+                Icon(Icons.score),
+                SizedBox(width: 8),
+                Text('${context.watch<GameState>().moveCount}'),
+              ],
+            ),
+          ],
+        ),
         actions: [
           IconButton(
             icon: Icon(Icons.refresh),
@@ -32,37 +45,38 @@ class GameScreenState extends State<GameScreen> {
           ),
         ],
       ),
-      body: Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            AspectRatio(
-              aspectRatio: 1,
-              child: Container(
-                constraints: BoxConstraints(
-                  maxWidth: MediaQuery.of(context).size.width * 0.9,
-                  maxHeight: MediaQuery.of(context).size.width * 0.9,
-                ),
-                child: GridView.builder(
-                  padding: EdgeInsets.all(16.0),
-                  gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                    crossAxisCount: 9,
-                    childAspectRatio: 1.0,
-                    crossAxisSpacing: 1.0,
-                    mainAxisSpacing: 1.0,
+      body: Column(
+        children: [
+          Expanded(
+            child: Center(
+              child: AspectRatio(
+                aspectRatio: 1,
+                child: Container(
+                  constraints: BoxConstraints(
+                    maxWidth: MediaQuery.of(context).size.width * 0.9,
+                    maxHeight: MediaQuery.of(context).size.width * 0.9,
                   ),
-                  itemCount: 81,
-                  itemBuilder: (context, index) {
-                    final row = index ~/ 9;
-                    final col = index % 9;
-                    return _buildCell(context, row, col);
-                  },
+                  child: GridView.builder(
+                    padding: EdgeInsets.all(16.0),
+                    gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                      crossAxisCount: 9,
+                      childAspectRatio: 1.0,
+                      crossAxisSpacing: 1.0,
+                      mainAxisSpacing: 1.0,
+                    ),
+                    itemCount: 81,
+                    itemBuilder: (context, index) {
+                      final row = index ~/ 9;
+                      final col = index % 9;
+                      return _buildCell(context, row, col);
+                    },
+                  ),
                 ),
               ),
             ),
-            _buildNumberPad(),
-          ],
-        ),
+          ),
+          _buildNumberPad(),
+        ],
       ),
     );
   }
@@ -81,23 +95,25 @@ class GameScreenState extends State<GameScreen> {
         duration: Duration(milliseconds: 200),
         curve: Curves.easeInOut,
         decoration: BoxDecoration(
-          color: isSelected ? Colors.blue.withAlpha(76) : Colors.white,
+          color: isSelected
+              ? Theme.of(context).colorScheme.primary.withAlpha(76)
+              : Theme.of(context).colorScheme.surface,
           border: Border(
             right: BorderSide(
               width: (col + 1) % 3 == 0 ? 2.0 : 1.0,
-              color: (col + 1) % 3 == 0 ? Colors.black : Colors.grey,
+              color: Theme.of(context).colorScheme.onSurface.withAlpha(20),
             ),
             bottom: BorderSide(
               width: (row + 1) % 3 == 0 ? 2.0 : 1.0,
-              color: (row + 1) % 3 == 0 ? Colors.black : Colors.grey,
+              color: Theme.of(context).colorScheme.onSurface.withAlpha(20),
             ),
             left: BorderSide(
               width: col % 3 == 0 ? 2.0 : 1.0,
-              color: col % 3 == 0 ? Colors.black : Colors.grey,
+              color: Theme.of(context).colorScheme.onSurface.withAlpha(20),
             ),
             top: BorderSide(
               width: row % 3 == 0 ? 2.0 : 1.0,
-              color: row % 3 == 0 ? Colors.black : Colors.grey,
+              color: Theme.of(context).colorScheme.onSurface.withAlpha(20),
             ),
           ),
         ),
@@ -111,7 +127,9 @@ class GameScreenState extends State<GameScreen> {
                   child: Text(
                     number.toString(),
                     style: TextStyle(
-                      color: isOriginal ? Colors.black : Colors.blue,
+                      color: isOriginal
+                          ? Theme.of(context).colorScheme.onSurface
+                          : Theme.of(context).colorScheme.secondary,
                       fontWeight:
                           isOriginal ? FontWeight.bold : FontWeight.normal,
                       fontSize: 24,
@@ -127,7 +145,10 @@ class GameScreenState extends State<GameScreen> {
                           ? Text(
                               '${index + 1}',
                               style: TextStyle(
-                                color: Colors.grey[600],
+                                color: Theme.of(context)
+                                    .colorScheme
+                                    .onSurface
+                                    .withAlpha(20),
                                 fontSize: 10,
                               ),
                             )

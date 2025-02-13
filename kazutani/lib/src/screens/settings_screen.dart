@@ -4,7 +4,7 @@ import '../settings/settings_controller.dart';
 class SettingsScreen extends StatelessWidget {
   final SettingsController controller;
 
-  const SettingsScreen({Key? key, required this.controller}) : super(key: key);
+  const SettingsScreen({super.key, required this.controller});
 
   @override
   Widget build(BuildContext context) {
@@ -19,14 +19,21 @@ class SettingsScreen extends StatelessWidget {
           children: [
             SizedBox(height: 20),
             Text('Theme', style: Theme.of(context).textTheme.titleLarge),
-            ListTile(
-              title: Text('Dark Mode'),
-              trailing: Switch(
-                value: Theme.of(context).brightness == Brightness.dark,
-                onChanged: (bool value) {
-                  // Handle theme change
-                },
-              ),
+            AnimatedBuilder(
+              animation: controller,
+              builder: (BuildContext context, Widget? child) {
+                return ListTile(
+                  title: Text('Dark Mode'),
+                  trailing: Switch(
+                    value: controller.themeMode == ThemeMode.dark,
+                    onChanged: (bool value) {
+                      controller.updateThemeMode(
+                        value ? ThemeMode.dark : ThemeMode.light,
+                      );
+                    },
+                  ),
+                );
+              },
             ),
           ],
         ),
