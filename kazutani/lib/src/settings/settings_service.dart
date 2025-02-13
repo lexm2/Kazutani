@@ -1,17 +1,33 @@
 import 'package:flutter/material.dart';
+import 'package:sqflite/sqflite.dart';
+import '../database/database_helper.dart';
 
-/// A service that stores and retrieves user settings.
-///
-/// By default, this class does not persist user settings. If you'd like to
-/// persist the user settings locally, use the shared_preferences package. If
-/// you'd like to store settings on a web server, use the http package.
 class SettingsService {
-  /// Loads the User's preferred ThemeMode from local or remote storage.
-  Future<ThemeMode> themeMode() async => ThemeMode.system;
+  final dbHelper = DatabaseHelper();
 
-  /// Persists the user's preferred ThemeMode to local or remote storage.
+  Future<ThemeMode> themeMode() async {
+    final db = await dbHelper.database;
+    final result = await db.query(
+      'settings',
+      where: 'key = ?',
+      whereArgs: ['theme'],
+    );
+
+    if (result.isEmpty) return ThemeMode.system;
+
+    final themeString = result.first['value'] as String;
+    return ThemeMode.values.firstWhere(
+      (e) => e.toString() == themeString,
+      orElse: () => ThemeMode.system,
+    );
+  }
+
   Future<void> updateThemeMode(ThemeMode theme) async {
-    // Use the shared_preferences package to persist settings locally or the
-    // http package to persist settings over the network.
+    final db = await dbHelper.database;
+    await db.insert(
+      'settings',
+      {'key': 'theme', 'value': theme.toString()},
+      conflictAlgorithm: ConflictAlgorithm.replace,
+    );
   }
 }

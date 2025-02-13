@@ -6,11 +6,12 @@ allprojects {
 }
 
 rootProject.buildDir = "../build"
-subprojects {
-    project.buildDir = "${rootProject.buildDir}/${project.name}"
-}
+
 subprojects {
     project.evaluationDependsOn(":app")
+    if (project.name != "shared_preferences_android") {
+        project.buildDir = "${rootProject.buildDir}/${project.name}"
+    }
 }
 
 tasks.register("clean", Delete) {
