@@ -27,36 +27,42 @@ class GameScreenState extends State<GameScreen> {
         title: Text('Game'),
         actions: [
           IconButton(
-            icon: Icon(Icons.check),
-            onPressed: () => context.read<GameState>().completeGameTest(),
-          ),
-          IconButton(
             icon: Icon(Icons.refresh),
             onPressed: () => gameState.resetGame(),
           ),
         ],
       ),
-      body: Column(
-        children: [
-          Expanded(
-            child: GridView.builder(
-              padding: EdgeInsets.all(16.0),
-              gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                crossAxisCount: 9,
-                childAspectRatio: 1.0,
-                crossAxisSpacing: 1.0,
-                mainAxisSpacing: 1.0,
+      body: Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            AspectRatio(
+              aspectRatio: 1,
+              child: Container(
+                constraints: BoxConstraints(
+                  maxWidth: MediaQuery.of(context).size.width * 0.9,
+                  maxHeight: MediaQuery.of(context).size.width * 0.9,
+                ),
+                child: GridView.builder(
+                  padding: EdgeInsets.all(16.0),
+                  gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                    crossAxisCount: 9,
+                    childAspectRatio: 1.0,
+                    crossAxisSpacing: 1.0,
+                    mainAxisSpacing: 1.0,
+                  ),
+                  itemCount: 81,
+                  itemBuilder: (context, index) {
+                    final row = index ~/ 9;
+                    final col = index % 9;
+                    return _buildCell(context, row, col);
+                  },
+                ),
               ),
-              itemCount: 81,
-              itemBuilder: (context, index) {
-                final row = index ~/ 9;
-                final col = index % 9;
-                return _buildCell(context, row, col);
-              },
             ),
-          ),
-          _buildNumberPad(),
-        ],
+            _buildNumberPad(),
+          ],
+        ),
       ),
     );
   }
@@ -71,7 +77,9 @@ class GameScreenState extends State<GameScreen> {
 
     return GestureDetector(
       onTap: () => gameState.selectCell(row, col),
-      child: Container(
+      child: AnimatedContainer(
+        duration: Duration(milliseconds: 200),
+        curve: Curves.easeInOut,
         decoration: BoxDecoration(
           color: isSelected ? Colors.blue.withAlpha(76) : Colors.white,
           border: Border(
@@ -93,35 +101,41 @@ class GameScreenState extends State<GameScreen> {
             ),
           ),
         ),
-        child: number != 0
-            ? Center(
-                child: Text(
-                  number.toString(),
-                  style: TextStyle(
-                    color: isOriginal ? Colors.black : Colors.blue,
-                    fontWeight:
-                        isOriginal ? FontWeight.bold : FontWeight.normal,
-                    fontSize: 24,
+        child: AnimatedSwitcher(
+          duration: Duration(milliseconds: 300),
+          transitionBuilder: (Widget child, Animation<double> animation) {
+            return ScaleTransition(scale: animation, child: child);
+          },
+          child: number != 0
+              ? Center(
+                  child: Text(
+                    number.toString(),
+                    style: TextStyle(
+                      color: isOriginal ? Colors.black : Colors.blue,
+                      fontWeight:
+                          isOriginal ? FontWeight.bold : FontWeight.normal,
+                      fontSize: 24,
+                    ),
                   ),
+                )
+              : GridView.count(
+                  crossAxisCount: 3,
+                  padding: EdgeInsets.all(2),
+                  children: List.generate(9, (index) {
+                    return Center(
+                      child: notes.contains(index + 1)
+                          ? Text(
+                              '${index + 1}',
+                              style: TextStyle(
+                                color: Colors.grey[600],
+                                fontSize: 10,
+                              ),
+                            )
+                          : null,
+                    );
+                  }),
                 ),
-              )
-            : GridView.count(
-                crossAxisCount: 3,
-                padding: EdgeInsets.all(2),
-                children: List.generate(9, (index) {
-                  return Center(
-                    child: notes.contains(index + 1)
-                        ? Text(
-                            '${index + 1}',
-                            style: TextStyle(
-                              color: Colors.grey[600],
-                              fontSize: 10,
-                            ),
-                          )
-                        : null,
-                  );
-                }),
-              ),
+        ),
       ),
     );
   }

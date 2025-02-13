@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import 'screens/game_screen.dart';
 import 'screens/settings_screen.dart';
+import 'screens/splash_screen.dart';
 import 'settings/settings_controller.dart';
 
 import 'screens/home_screen.dart';
@@ -21,7 +22,9 @@ class MyApp extends StatelessWidget {
       routes: {
         '/': (context) => HomeScreen(),
         '/game': (context) => GameScreen(),
-        '/settings': (context) => SettingsScreen(controller: settingsController),
+        '/settings': (context) =>
+            SettingsScreen(controller: settingsController),
+        '/splash': (context) => SplashScreen(),
       },
       theme: ThemeData(
         primarySwatch: Colors.blue,
