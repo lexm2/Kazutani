@@ -169,14 +169,31 @@ class GameScreenState extends State<GameScreen> {
           Row(
             mainAxisAlignment: MainAxisAlignment.end,
             children: [
-              TextButton.icon(
-                icon: Icon(Icons.edit_note),
-                label: Text('Notes'),
-                onPressed: () => context.read<GameState>().toggleNoteMode(),
-                style: TextButton.styleFrom(
-                  backgroundColor: context.watch<GameState>().isNoteMode
-                      ? Colors.blue.withAlpha(100)
-                      : null,
+              AnimatedContainer(
+                duration: Duration(milliseconds: 200),
+                curve: Curves.easeInOut,
+                child: TextButton.icon(
+                  icon: Icon(
+                    Icons.edit_note,
+                    color: context.watch<GameState>().isNoteMode
+                        ? Theme.of(context).colorScheme.onPrimary
+                        : Theme.of(context).colorScheme.onSurface,
+                  ),
+                  label: Text(
+                    'Notes',
+                    style: TextStyle(
+                      color: context.watch<GameState>().isNoteMode
+                          ? Theme.of(context).colorScheme.onPrimary
+                          : Theme.of(context).colorScheme.onSurface,
+                    ),
+                  ),
+                  onPressed: () => context.read<GameState>().toggleNoteMode(),
+                  style: TextButton.styleFrom(
+                    backgroundColor: context.watch<GameState>().isNoteMode
+                        ? Theme.of(context).colorScheme.primary
+                        : Theme.of(context).colorScheme.surfaceContainerHighest,
+                    padding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                  ),
                 ),
               ),
             ],
@@ -195,17 +212,28 @@ class GameScreenState extends State<GameScreen> {
               if (index == 9) {
                 return ElevatedButton(
                   onPressed: () => context.read<GameState>().clearCell(),
-                  child: Icon(Icons.backspace),
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.red[400],
+                    backgroundColor: Theme.of(context).colorScheme.error,
+                    foregroundColor: Theme.of(context).colorScheme.onError,
+                  ),
+                  child: Icon(
+                    Icons.backspace,
+                    color: Theme.of(context).colorScheme.onPrimary,
                   ),
                 );
               }
               return ElevatedButton(
                 onPressed: () => context.read<GameState>().setNumber(index + 1),
-                child: Text('${index + 1}'),
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.blue[400],
+                  backgroundColor: Theme.of(context).colorScheme.primary,
+                  foregroundColor: Theme.of(context).colorScheme.onPrimary,
+                ),
+                child: Text(
+                  '${index + 1}',
+                  style: TextStyle(
+                    color: Theme.of(context).colorScheme.onPrimary,
+                    fontSize: 18,
+                  ),
                 ),
               );
             },

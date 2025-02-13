@@ -39,11 +39,7 @@ class MyApp extends StatelessWidget {
             ),
           ),
           themeMode: settingsController.themeMode,
-          home: AnimatedTheme(
-            data: Theme.of(context),
-            duration: Duration(milliseconds: 300),
-            child: HomeScreen(),
-          ),
+          home: HomeScreen(),
           routes: {
             '/game': (context) => GameScreen(),
             '/settings': (context) => SettingsScreen(
