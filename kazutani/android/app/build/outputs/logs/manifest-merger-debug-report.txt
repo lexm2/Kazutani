@@ -27,6 +27,7 @@ INJECTED from X:\Kazutani\kazutani\android\app\src\debug\AndroidManifest.xml:1:1
 INJECTED from X:\Kazutani\kazutani\android\app\src\debug\AndroidManifest.xml:1:1-7:12
 INJECTED from X:\Kazutani\kazutani\android\app\src\debug\AndroidManifest.xml:1:1-7:12
 MERGED from [:flutter_native_splash] X:\Kazutani\kazutani\build\flutter_native_splash\intermediates\merged_manifest\debug\AndroidManifest.xml:2:1-7:12
+MERGED from [:sqflite_android] X:\Kazutani\kazutani\build\sqflite_android\intermediates\merged_manifest\debug\AndroidManifest.xml:2:1-7:12
 MERGED from [androidx.fragment:fragment:1.7.1] C:\Users\lexkm\.gradle\caches\transforms-3\dcef6e2757e27a216ae6361fa6b1f8d1\transformed\fragment-1.7.1\AndroidManifest.xml:2:1-7:12
 MERGED from [androidx.window:window:1.2.0] C:\Users\lexkm\.gradle\caches\transforms-3\5adf9c667c0a9af4e25e59bf4aa64006\transformed\jetified-window-1.2.0\AndroidManifest.xml:17:1-31:12
 MERGED from [androidx.window:window-java:1.2.0] C:\Users\lexkm\.gradle\caches\transforms-3\ff5f05b686c72021dbf81f60a65d391b\transformed\jetified-window-java-1.2.0\AndroidManifest.xml:17:1-21:12
@@ -84,6 +85,8 @@ INJECTED from X:\Kazutani\kazutani\android\app\src\debug\AndroidManifest.xml
 INJECTED from X:\Kazutani\kazutani\android\app\src\debug\AndroidManifest.xml
 MERGED from [:flutter_native_splash] X:\Kazutani\kazutani\build\flutter_native_splash\intermediates\merged_manifest\debug\AndroidManifest.xml:5:5-44
 MERGED from [:flutter_native_splash] X:\Kazutani\kazutani\build\flutter_native_splash\intermediates\merged_manifest\debug\AndroidManifest.xml:5:5-44
+MERGED from [:sqflite_android] X:\Kazutani\kazutani\build\sqflite_android\intermediates\merged_manifest\debug\AndroidManifest.xml:5:5-44
+MERGED from [:sqflite_android] X:\Kazutani\kazutani\build\sqflite_android\intermediates\merged_manifest\debug\AndroidManifest.xml:5:5-44
 MERGED from [androidx.fragment:fragment:1.7.1] C:\Users\lexkm\.gradle\caches\transforms-3\dcef6e2757e27a216ae6361fa6b1f8d1\transformed\fragment-1.7.1\AndroidManifest.xml:5:5-44
 MERGED from [androidx.fragment:fragment:1.7.1] C:\Users\lexkm\.gradle\caches\transforms-3\dcef6e2757e27a216ae6361fa6b1f8d1\transformed\fragment-1.7.1\AndroidManifest.xml:5:5-44
 MERGED from [androidx.window:window:1.2.0] C:\Users\lexkm\.gradle\caches\transforms-3\5adf9c667c0a9af4e25e59bf4aa64006\transformed\jetified-window-1.2.0\AndroidManifest.xml:20:5-44
