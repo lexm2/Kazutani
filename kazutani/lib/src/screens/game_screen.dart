@@ -16,33 +16,18 @@ class GameScreenState extends State<GameScreen> {
     WidgetsBinding.instance.addPostFrameCallback((_) async {
       final gameState = context.read<GameState>();
       await gameState.loadLastGame();
-      if (gameState.board.every((row) => row.every((cell) => cell == 0))) {
-        // Only start new game if no saved game was loaded
+      if (GameState.cells.every((cell) => cell.value == 0)) {
         gameState.startNewGame();
       }
     });
   }
 
   @override
-  @override
   Widget build(BuildContext context) {
     final gameState = context.watch<GameState>();
 
     return Scaffold(
       appBar: AppBar(
-        title: Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            Text('Game'),
-            Row(
-              children: [
-                Icon(Icons.score),
-                SizedBox(width: 8),
-                Text('${context.watch<GameState>().moveCount}'),
-              ],
-            ),
-          ],
-        ),
         actions: [
           IconButton(
             icon: Icon(Icons.refresh),
@@ -52,6 +37,16 @@ class GameScreenState extends State<GameScreen> {
       ),
       body: Column(
         children: [
+          Padding(
+            padding: EdgeInsets.symmetric(vertical: 24),
+            child: Text(
+              '${context.watch<GameState>().moveCount}',
+              style: TextStyle(
+                fontSize: 48,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+          ),
           Expanded(
             child: Center(
               child: AspectRatio(
@@ -70,10 +65,8 @@ class GameScreenState extends State<GameScreen> {
                       mainAxisSpacing: 1.0,
                     ),
                     itemCount: 81,
-                    itemBuilder: (context, index) {
-                      final row = index ~/ 9;
-                      final col = index % 9;
-                      return _buildCell(context, row, col);
+                    itemBuilder: (context, position) {
+                      return _buildCell(context, position);
                     },
                   ),
                 ),
@@ -86,16 +79,13 @@ class GameScreenState extends State<GameScreen> {
     );
   }
 
-  Widget _buildCell(BuildContext context, int row, int col) {
+  Widget _buildCell(BuildContext context, int position) {
     final gameState = context.watch<GameState>();
-    final isSelected =
-        gameState.selectedRow == row && gameState.selectedCol == col;
-    final number = gameState.board[row][col];
-    final isOriginal = gameState.isOriginal[row][col];
-    final notes = gameState.notes[row][col];
+    final cell = GameState.cells[position];
+    final isSelected = gameState.selectedCell == position;
 
     return GestureDetector(
-      onTap: () => gameState.selectCell(row, col),
+      onTap: () => gameState.selectCell(position),
       child: AnimatedContainer(
         duration: Duration(milliseconds: 150),
         curve: Curves.easeInOut,
@@ -105,19 +95,19 @@ class GameScreenState extends State<GameScreen> {
               : Theme.of(context).colorScheme.surface,
           border: Border(
             right: BorderSide(
-              width: (col + 1) % 3 == 0 ? 2.0 : 1.0,
+              width: cell.rightBorderWidth,
               color: Theme.of(context).colorScheme.onSurface.withAlpha(20),
             ),
             bottom: BorderSide(
-              width: (row + 1) % 3 == 0 ? 2.0 : 1.0,
+              width: cell.bottomBorderWidth,
               color: Theme.of(context).colorScheme.onSurface.withAlpha(20),
             ),
             left: BorderSide(
-              width: col % 3 == 0 ? 2.0 : 1.0,
+              width: cell.leftBorderWidth,
               color: Theme.of(context).colorScheme.onSurface.withAlpha(20),
             ),
             top: BorderSide(
-              width: row % 3 == 0 ? 2.0 : 1.0,
+              width: cell.topBorderWidth,
               color: Theme.of(context).colorScheme.onSurface.withAlpha(20),
             ),
           ),
@@ -127,16 +117,16 @@ class GameScreenState extends State<GameScreen> {
           transitionBuilder: (Widget child, Animation<double> animation) {
             return ScaleTransition(scale: animation, child: child);
           },
-          child: number != 0
+          child: cell.value != 0
               ? Center(
                   child: Text(
-                    number.toString(),
+                    cell.value.toString(),
                     style: TextStyle(
-                      color: isOriginal
+                      color: cell.isOriginal
                           ? Theme.of(context).colorScheme.onSurface
                           : Theme.of(context).colorScheme.secondary,
                       fontWeight:
-                          isOriginal ? FontWeight.bold : FontWeight.normal,
+                          cell.isOriginal ? FontWeight.bold : FontWeight.normal,
                       fontSize: 24,
                     ),
                   ),
@@ -146,7 +136,7 @@ class GameScreenState extends State<GameScreen> {
                   padding: EdgeInsets.all(2),
                   children: List.generate(9, (index) {
                     return Center(
-                      child: notes.contains(index + 1)
+                      child: cell.notes.contains(index + 1)
                           ? Text(
                               '${index + 1}',
                               style: TextStyle(
@@ -213,7 +203,7 @@ class GameScreenState extends State<GameScreen> {
               crossAxisSpacing: 8.0,
               mainAxisSpacing: 8.0,
             ),
-            itemCount: 10, // 9 numbers + delete
+            itemCount: 10,
             itemBuilder: (context, index) {
               if (index == 9) {
                 return ElevatedButton(

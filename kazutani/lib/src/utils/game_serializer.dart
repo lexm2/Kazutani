@@ -1,143 +1,138 @@
 import 'dart:convert';
 import 'dart:typed_data';
+import '../game/cell.dart';
 
 class GameSerializer {
-  static String serializeGameState(List<List<int>> board,
-      List<List<bool>> isOriginal, List<List<Set<int>>> notes) {
-    final boardBytes = _packBoard(board);
-    final originalBytes = _packBoolBoard(isOriginal);
-    final notesBytes = _packNotes(notes);
+  // TODO: we are not using this for simplicity right now because of database changes being constant, add this back in when the final databse structure has been decided
+
+  static String serializeGameState(List<Cell> cells) {
+    final valuesBytes = _packValues(cells);
+    final originalBytes = _packOriginal(cells);
+    final notesBytes = _packNotes(cells);
 
     return json.encode({
-      'board': base64Encode(boardBytes),
+      'values': base64Encode(valuesBytes),
       'original': base64Encode(originalBytes),
       'notes': base64Encode(notesBytes),
     });
   }
 
-  static Uint8List _packNotes(List<List<Set<int>>> notes) {
-    final bytes =
-        Uint8List(102); // 9x9 cells, 9 possible notes per cell = 102 bytes
+  static Uint8List _packValues(List<Cell> cells) {
+    final bytes = Uint8List(41); // 81 cells, 4 bits per value = 41 bytes
     int byteIndex = 0;
     int bitPosition = 0;
 
-    for (var row in notes) {
-      for (var cell in row) {
-        for (int i = 1; i <= 9; i++) {
-          if (cell.contains(i)) bytes[byteIndex] |= (1 << bitPosition);
-          bitPosition++;
-          if (bitPosition >= 8) {
-            bitPosition = 0;
-            byteIndex++;
-          }
+    for (var cell in cells) {
+      bytes[byteIndex] |= (cell.value << bitPosition);
+      bitPosition += 4;
+      if (bitPosition >= 8) {
+        bitPosition = 0;
+        byteIndex++;
+      }
+    }
+    return bytes;
+  }
+
+  static Uint8List _packOriginal(List<Cell> cells) {
+    final bytes = Uint8List(11); // 81 cells, 1 bit per bool = 11 bytes
+    int byteIndex = 0;
+    int bitPosition = 0;
+
+    for (var cell in cells) {
+      if (cell.isOriginal) bytes[byteIndex] |= (1 << bitPosition);
+      bitPosition++;
+      if (bitPosition >= 8) {
+        bitPosition = 0;
+        byteIndex++;
+      }
+    }
+    return bytes;
+  }
+
+  static Uint8List _packNotes(List<Cell> cells) {
+    final bytes =
+        Uint8List(102); // 81 cells, 9 possible notes per cell = 102 bytes
+    int byteIndex = 0;
+    int bitPosition = 0;
+
+    for (var cell in cells) {
+      for (int i = 1; i <= 9; i++) {
+        if (cell.notes.contains(i)) bytes[byteIndex] |= (1 << bitPosition);
+        bitPosition++;
+        if (bitPosition >= 8) {
+          bitPosition = 0;
+          byteIndex++;
         }
       }
     }
     return bytes;
   }
 
-  static (List<List<int>>, List<List<bool>>, List<List<Set<int>>>)
-      deserializeGameState(String serialized) {
+  static List<Cell> deserializeGameState(String serialized) {
     final data = json.decode(serialized);
-
-    final board = _unpackBoard(base64Decode(data['board']));
-    final original = _unpackBoolBoard(base64Decode(data['original']));
+    final values = _unpackValues(base64Decode(data['values']));
+    final original = _unpackOriginal(base64Decode(data['original']));
     final notes = _unpackNotes(base64Decode(data['notes']));
 
-    return (board, original, notes);
+    return List.generate(
+        81,
+        (i) => Cell(
+              i,
+              value: values[i],
+              isOriginal: original[i],
+              notes: notes[i],
+            ));
   }
 
-  static List<List<Set<int>>> _unpackNotes(Uint8List bytes) {
-    final notes = List.generate(9, (_) => List.generate(9, (_) => <int>{}));
+  static List<int> _unpackValues(Uint8List bytes) {
+    final values = List.filled(81, 0);
     int byteIndex = 0;
     int bitPosition = 0;
 
-    for (int i = 0; i < 9; i++) {
-      for (int j = 0; j < 9; j++) {
-        for (int n = 1; n <= 9; n++) {
-          if (((bytes[byteIndex] >> bitPosition) & 1) == 1) {
-            notes[i][j].add(n);
-          }
-          bitPosition++;
-          if (bitPosition >= 8) {
-            bitPosition = 0;
-            byteIndex++;
-          }
+    for (int i = 0; i < 81; i++) {
+      values[i] = (bytes[byteIndex] >> bitPosition) & 0xF;
+      bitPosition += 4;
+      if (bitPosition >= 8) {
+        bitPosition = 0;
+        byteIndex++;
+      }
+    }
+    return values;
+  }
+
+  static List<bool> _unpackOriginal(Uint8List bytes) {
+    final original = List.filled(81, false);
+    int byteIndex = 0;
+    int bitPosition = 0;
+
+    for (int i = 0; i < 81; i++) {
+      original[i] = ((bytes[byteIndex] >> bitPosition) & 1) == 1;
+      bitPosition++;
+      if (bitPosition >= 8) {
+        bitPosition = 0;
+        byteIndex++;
+      }
+    }
+    return original;
+  }
+
+  static List<Set<int>> _unpackNotes(Uint8List bytes) {
+    final notes = List.generate(81, (_) => <int>{});
+    int byteIndex = 0;
+    int bitPosition = 0;
+
+    for (int i = 0; i < 81; i++) {
+      for (int n = 1; n <= 9; n++) {
+        if (((bytes[byteIndex] >> bitPosition) & 1) == 1) {
+          notes[i].add(n);
+        }
+        bitPosition++;
+        if (bitPosition >= 8) {
+          bitPosition = 0;
+          byteIndex++;
         }
       }
     }
     return notes;
-  }
-
-  static Uint8List _packBoard(List<List<int>> board) {
-    final bytes = Uint8List(41); // 9x9 board, 4 bits per number = 41 bytes
-    int byteIndex = 0;
-    int bitPosition = 0;
-
-    for (var row in board) {
-      for (var value in row) {
-        bytes[byteIndex] |= (value << bitPosition);
-        bitPosition += 4;
-        if (bitPosition >= 8) {
-          bitPosition = 0;
-          byteIndex++;
-        }
-      }
-    }
-    return bytes;
-  }
-
-  static Uint8List _packBoolBoard(List<List<bool>> board) {
-    final bytes = Uint8List(11); // 9x9 bools, 1 bit per bool = 11 bytes
-    int byteIndex = 0;
-    int bitPosition = 0;
-
-    for (var row in board) {
-      for (var value in row) {
-        if (value) bytes[byteIndex] |= (1 << bitPosition);
-        bitPosition++;
-        if (bitPosition >= 8) {
-          bitPosition = 0;
-          byteIndex++;
-        }
-      }
-    }
-    return bytes;
-  }
-
-  static List<List<int>> _unpackBoard(Uint8List bytes) {
-    final board = List.generate(9, (_) => List.filled(9, 0));
-    int byteIndex = 0;
-    int bitPosition = 0;
-
-    for (int i = 0; i < 9; i++) {
-      for (int j = 0; j < 9; j++) {
-        board[i][j] = (bytes[byteIndex] >> bitPosition) & 0xF;
-        bitPosition += 4;
-        if (bitPosition >= 8) {
-          bitPosition = 0;
-          byteIndex++;
-        }
-      }
-    }
-    return board;
-  }
-
-  static List<List<bool>> _unpackBoolBoard(Uint8List bytes) {
-    final board = List.generate(9, (_) => List.filled(9, false));
-    int byteIndex = 0;
-    int bitPosition = 0;
-
-    for (int i = 0; i < 9; i++) {
-      for (int j = 0; j < 9; j++) {
-        board[i][j] = ((bytes[byteIndex] >> bitPosition) & 1) == 1;
-        bitPosition++;
-        if (bitPosition >= 8) {
-          bitPosition = 0;
-          byteIndex++;
-        }
-      }
-    }
-    return board;
   }
 }

@@ -1,7 +1,7 @@
 import 'dart:convert';
 import 'package:sqflite/sqflite.dart';
 import 'package:path/path.dart';
-import '../utils/game_serializer.dart';
+import '../game/cell.dart';
 import 'game_data.dart';
 
 class DatabaseHelper {
@@ -21,9 +21,10 @@ class DatabaseHelper {
   Future<Database> _initDatabase() async {
     String path = join(await getDatabasesPath(), 'kazutani.db');
 
-    // if (await databaseExists(path)) {
-    //   await deleteDatabase(path);
-    // }
+    if (await databaseExists(path)) {
+      await deleteDatabase(path);
+      print('Database deleted');
+    }
 
     return await openDatabase(
       path,
@@ -43,20 +44,18 @@ class DatabaseHelper {
 
   Future _onCreate(Database db, int version) async {
     await db.execute('''
-    CREATE TABLE IF NOT EXISTS game_states(
+    CREATE TABLE game_states(
       id INTEGER PRIMARY KEY AUTOINCREMENT,
-      board TEXT NOT NULL,
-      original_positions TEXT NOT NULL,
-      notes TEXT NOT NULL,
+      board_data TEXT NOT NULL,
       move_count INTEGER NOT NULL,
       created_at INTEGER NOT NULL,
       last_played_at INTEGER NOT NULL,
-      is_completed BOOLEAN NOT NULL DEFAULT 0
+      is_completed INTEGER NOT NULL DEFAULT 0
     )
   ''');
 
     await db.execute('''
-    CREATE TABLE IF NOT EXISTS settings(
+    CREATE TABLE settings(
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       key TEXT NOT NULL,
       value TEXT NOT NULL
@@ -65,28 +64,25 @@ class DatabaseHelper {
   }
 
   Future<int> saveGameState({
-    required List<List<int>> board,
-    required List<List<bool>> originalPositions,
-    required List<List<Set<int>>> notes,
+    required List<Cell> cells,
     required int moveCount,
     bool isCompleted = false,
   }) async {
     final db = await database;
-    final serializedState =
-        GameSerializer.serializeGameState(board, originalPositions, notes);
-    final decodedState = json.decode(serializedState);
 
-    final gameDataObj = GameData(
-      board: decodedState['board'],
-      originalPositions: decodedState['original'],
-      notes: decodedState['notes'],
-      moveCount: moveCount,
-      createdAt: DateTime.now().millisecondsSinceEpoch,
-      lastPlayedAt: DateTime.now().millisecondsSinceEpoch,
-      isCompleted: isCompleted,
-    );
-
-    return await db.insert('game_states', gameDataObj.toMap());
+    return await db.insert('game_states', {
+      'board_data': json.encode(cells
+          .map((c) => {
+                'value': c.value,
+                'isOriginal': c.isOriginal,
+                'notes': c.notes.toList(),
+              })
+          .toList()),
+      'move_count': moveCount,
+      'created_at': DateTime.now().millisecondsSinceEpoch,
+      'last_played_at': DateTime.now().millisecondsSinceEpoch,
+      'is_completed': isCompleted ? 1 : 0,
+    });
   }
 
   Future<GameData?> loadLatestGame() async {
@@ -97,7 +93,28 @@ class DatabaseHelper {
       limit: 1,
     );
 
-    if (results.isEmpty) return null;
-    return GameData.fromMap(results.first);
+    if (results.isEmpty || results.first['board_data'] == null) return null;
+
+    final data = results.first;
+    final boardData = json.decode(data['board_data'] as String) as List;
+
+    List<Cell> cells = List.generate(81, (i) {
+      final cellData = boardData[i];
+      return Cell(
+        i,
+        value: cellData['value'],
+        isOriginal: cellData['isOriginal'],
+        notes: Set<int>.from(cellData['notes']),
+      );
+    });
+
+    return GameData(
+      id: data['id'],
+      cells: cells,
+      moveCount: data['move_count'],
+      createdAt: data['created_at'],
+      lastPlayedAt: data['last_played_at'],
+      isCompleted: data['is_completed'] == 1,
+    );
   }
 }
