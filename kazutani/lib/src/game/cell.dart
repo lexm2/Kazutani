@@ -37,14 +37,14 @@ class Cell {
   // @returns the net score for the move
   int setNumber(
       int number, bool isNoteMode, List<Cell> cells, GameState gameState) {
-    if (isOriginal) return -100;
+    print("isOriginal: $isOriginal");
+    if (isOriginal) return 100;
 
     if (isNoteMode) {
       toggleNote(number);
       return 1;
     }
-
-    var validationResult = SudokuConstraints.validateMove(position, number);
+    var validationResult = SudokuConstraints.validateMove(cells, position, number);
     if (validationResult.isValid) {
       gameState.completeValidMove();
       setValue(number);
@@ -58,7 +58,26 @@ class Cell {
       }
     }
 
-    return 5;
+    return 18;
+  }
+
+  bool setNumberConstrantsOnly(List<Cell> cells, int number) {
+    var validationResult = SudokuConstraints.validateMove(cells, position, number);
+
+    if (validationResult.isValid) {
+      setValue(number);
+      return true;
+    } else {
+      return false;
+    }
+  }
+
+  void keepOnlyNotes(Set<int> notesToKeep) {
+    notes.removeWhere((note) => !notesToKeep.contains(note));
+  }
+
+  void deleteOnlyNotes(Set<int> notesToDelete) {
+    notes.removeWhere((note) => notesToDelete.contains(note));
   }
 
   void clear() {

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'dart:math' as math;
 import '../game/game_state.dart';
 
 class GameScreen extends StatefulWidget {
@@ -10,13 +11,15 @@ class GameScreen extends StatefulWidget {
 }
 
 class GameScreenState extends State<GameScreen> {
+  Offset? panStart;
+
   @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) async {
       final gameState = context.read<GameState>();
       await gameState.loadLastGame();
-      if (GameState.cells.every((cell) => cell.value == 0)) {
+      if (gameState.cells.every((cell) => cell.value == 0)) {
         gameState.startNewGame();
       }
     });
@@ -48,7 +51,11 @@ class GameScreenState extends State<GameScreen> {
             ),
           ),
           Expanded(
-            child: Center(
+            child: GestureDetector(
+              onHorizontalDragEnd: (_) => gameState.handleHiddenPairHorizontal(),
+              onVerticalDragEnd: (_) => gameState.handleHiddenPairVertical(),
+              onLongPress: () => gameState.handleHiddenPairBlock(),
+              onDoubleTap: () => gameState.toggleNoteMode(),
               child: AspectRatio(
                 aspectRatio: 1,
                 child: Container(
@@ -58,6 +65,7 @@ class GameScreenState extends State<GameScreen> {
                   ),
                   child: GridView.builder(
                     padding: EdgeInsets.all(16.0),
+                    physics: NeverScrollableScrollPhysics(),
                     gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
                       crossAxisCount: 9,
                       childAspectRatio: 1.0,
@@ -65,9 +73,8 @@ class GameScreenState extends State<GameScreen> {
                       mainAxisSpacing: 1.0,
                     ),
                     itemCount: 81,
-                    itemBuilder: (context, position) {
-                      return _buildCell(context, position);
-                    },
+                    itemBuilder: (context, position) =>
+                        _buildCell(context, position),
                   ),
                 ),
               ),
@@ -81,11 +88,11 @@ class GameScreenState extends State<GameScreen> {
 
   Widget _buildCell(BuildContext context, int position) {
     final gameState = context.watch<GameState>();
-    final cell = GameState.cells[position];
+    final cell = gameState.cells[position];
     final isSelected = gameState.selectedCell == position;
 
     return GestureDetector(
-      onTap: () => gameState.selectCell(position),
+      onTapDown: (_) => gameState.selectCell(position),
       child: AnimatedContainer(
         duration: Duration(milliseconds: 150),
         curve: Curves.easeInOut,
@@ -134,6 +141,7 @@ class GameScreenState extends State<GameScreen> {
               : GridView.count(
                   crossAxisCount: 3,
                   padding: EdgeInsets.all(2),
+                  physics: NeverScrollableScrollPhysics(),
                   children: List.generate(9, (index) {
                     return Center(
                       child: cell.notes.contains(index + 1)

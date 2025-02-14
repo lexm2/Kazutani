@@ -18,15 +18,15 @@ class ValidationResult {
 }
 
 class SudokuConstraints {
-  static List<Cell> get cells => GameState.cells;
-
-  static ValidationResult validateMove(int position, int number) {
+  static ValidationResult validateMove(
+      List<Cell> cells, int position, int number) {
     List<ConflictPosition> conflicts = [];
-    Cell cell = cells[position];
+    int row = position ~/ 9;
+    int col = position % 9;
 
     // Check row
     for (int i = 0; i < 9; i++) {
-      int checkPos = cell.row * 9 + i;
+      int checkPos = row * 9 + i;
       if (cells[checkPos].value == number) {
         conflicts.add(ConflictPosition(checkPos, number));
       }
@@ -34,18 +34,18 @@ class SudokuConstraints {
 
     // Check column
     for (int i = 0; i < 9; i++) {
-      int checkPos = i * 9 + cell.col;
+      int checkPos = i * 9 + col;
       if (cells[checkPos].value == number) {
         conflicts.add(ConflictPosition(checkPos, number));
       }
     }
 
     // Check 3x3 box
-    int boxStartRow = (cell.row ~/ 3) * 3;
-    int boxStartCol = (cell.col ~/ 3) * 3;
-    for (int r = 0; r < 3; r++) {
-      for (int c = 0; c < 3; c++) {
-        int checkPos = (boxStartRow + r) * 9 + (boxStartCol + c);
+    int boxRow = row - (row % 3);
+    int boxCol = col - (col % 3);
+    for (int i = 0; i < 3; i++) {
+      for (int j = 0; j < 3; j++) {
+        int checkPos = (boxRow + i) * 9 + (boxCol + j);
         if (cells[checkPos].value == number) {
           conflicts.add(ConflictPosition(checkPos, number));
         }
@@ -55,7 +55,7 @@ class SudokuConstraints {
     return ValidationResult(conflicts.isEmpty, conflicts);
   }
 
-  static bool isGameComplete() {
+  static bool isGameComplete(List<Cell> cells) {
     // Check boxes
     for (int box = 0; box < 9; box++) {
       Set<int> boxNumbers = {};
@@ -92,48 +92,52 @@ class SudokuConstraints {
     return true;
   }
 
-  static List<(int, Set<int>)> findHiddenPairs(
-      int position, Constraints constraint) {
-    List<(int, Set<int>)> hiddenPairs = [];
-    Map<Set<int>, List<int>> candidatePositions = {};
+  static List<(int, Set<int>)> findMatchingNotes(
+      List<Cell> cells, int position, Constraints constraint) {
+    List<(int, Set<int>)> matchingCells = [];
+    Set<int> selectedNotes = cells[position].notes;
+    List<int> cellsToCheck = getCellsToCheck(cells, position, constraint);
 
-    List<int> cellsToCheck = _getCellsToCheck(position, constraint);
+    for (var checkPos in cellsToCheck) {
+      if (checkPos == position) continue;
+      var currentNotes = cells[checkPos].notes;
+      var matchingNotes = currentNotes.intersection(selectedNotes);
+      if (matchingNotes.isNotEmpty) {
+        matchingCells.add((checkPos, matchingNotes));
+      }
+    }
+
+    return matchingCells;
+  }
+
+  static List<(List<int>, Set<int>)> findNakedCells(
+      List<Cell> cells, int position, Constraints constraint) {
+    List<(List<int>, Set<int>)> nakedGroups = [];
+    List<int> cellsToCheck = getCellsToCheck(cells, position, constraint);
+
+    // Group cells by their exact note sets
+    Map<Set<int>, List<int>> noteGroups = {};
 
     for (var checkPos in cellsToCheck) {
       var currentNotes = cells[checkPos].notes;
       if (currentNotes.length >= 2) {
-        for (var i = 2; i <= currentNotes.length; i++) {
-          for (var combination in _getCombinations(currentNotes.toList(), i)) {
-            var noteSet = Set<int>.from(combination);
-            candidatePositions.putIfAbsent(noteSet, () => []);
-            candidatePositions[noteSet]!.add(checkPos);
-          }
-        }
+        var noteSet = currentNotes.toSet();
+        noteGroups.putIfAbsent(noteSet, () => []).add(checkPos);
       }
     }
 
-    candidatePositions.forEach((noteSet, positions) {
-      if (noteSet.length == 2 && positions.length == 2) {
-        bool isHidden = true;
-        for (var checkPos in cellsToCheck) {
-          if (!positions.contains(checkPos)) {
-            var otherNotes = cells[checkPos].notes;
-            if (otherNotes.intersection(noteSet).isNotEmpty) {
-              isHidden = false;
-              break;
-            }
-          }
-        }
-        if (isHidden) {
-          positions.forEach((pos) => hiddenPairs.add((pos, noteSet)));
-        }
+    // Find groups where number of positions equals number of notes
+    noteGroups.forEach((notes, positions) {
+      if (positions.length == notes.length) {
+        nakedGroups.add((positions, notes));
       }
     });
 
-    return hiddenPairs;
+    return nakedGroups;
   }
 
-  static List<int> _getCellsToCheck(int position, Constraints constraint) {
+  static List<int> getCellsToCheck(
+      List<Cell> cells, int position, Constraints constraint) {
     Cell cell = cells[position];
     return switch (constraint) {
       Constraints.horizontal => List.generate(9, (col) => cell.row * 9 + col),
@@ -150,48 +154,8 @@ class SudokuConstraints {
     };
   }
 
-  static List<List<int>> _getCombinations(List<int> elements, int length) {
-    if (length > elements.length) return [];
-    if (length == 0) return [[]];
-    if (length == elements.length) return [elements];
-
-    List<List<int>> result = [];
-    var first = elements.first;
-    var rest = elements.sublist(1);
-
-    var combsWithoutFirst = _getCombinations(rest, length);
-    var combsWithFirst = _getCombinations(rest, length - 1)
-        .map((comb) => [first, ...comb])
-        .toList();
-
-    result.addAll(combsWithoutFirst);
-    result.addAll(combsWithFirst);
-    return result;
-  }
-
-  static bool isSafe(int position, int number) {
-    Cell cell = cells[position];
-
-    // Check row
-    for (int col = 0; col < 9; col++) {
-      if (cells[cell.row * 9 + col].value == number) return false;
-    }
-
-    // Check column
-    for (int row = 0; row < 9; row++) {
-      if (cells[row * 9 + cell.col].value == number) return false;
-    }
-
-    // Check box
-    int boxStartRow = (cell.row ~/ 3) * 3;
-    int boxStartCol = (cell.col ~/ 3) * 3;
-    for (int r = 0; r < 3; r++) {
-      for (int c = 0; c < 3; c++) {
-        if (cells[(boxStartRow + r) * 9 + (boxStartCol + c)].value == number)
-          return false;
-      }
-    }
-
-    return true;
+  static bool isSafe(List<Cell> cells, int position, int number) {
+    ValidationResult result = validateMove(cells, position, number);
+    return result.isValid;
   }
 }

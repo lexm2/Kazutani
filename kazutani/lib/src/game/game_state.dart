@@ -6,11 +6,13 @@ import 'game_logic.dart';
 import '../utils/sudoku_constraints.dart';
 import 'cell.dart';
 
+import 'dart:math' as math;
+
 class GameState extends ChangeNotifier {
   final SudokuLogic _logic = SudokuLogic();
   final DatabaseHelper _dbHelper = DatabaseHelper();
 
-  static final List<Cell> cells = List.generate(81, (index) => Cell(index));
+  List<Cell> cells = List.generate(81, (index) => Cell(index));
 
   ValueNotifier<Duration> gameTime = ValueNotifier(Duration.zero);
 
@@ -23,6 +25,8 @@ class GameState extends ChangeNotifier {
 
   void selectCell(int position) {
     selectedCell = position;
+    print(SudokuConstraints.isSafe(
+        cells, selectedCell, cells[selectedCell].value));
     notifyListeners();
   }
 
@@ -31,7 +35,7 @@ class GameState extends ChangeNotifier {
       cells[selectedCell].setNumber(number, isNoteMode, cells, this);
       score++;
 
-      if (SudokuConstraints.isGameComplete()) {
+      if (SudokuConstraints.isGameComplete(cells)) {
         hasWon = true;
         _handleWin();
       }
@@ -86,9 +90,6 @@ class GameState extends ChangeNotifier {
 
   void resetGame() {
     startNewGame();
-    moveCount = 0;
-    hasWon = false;
-    gameTime.value = Duration.zero;
     for (var cell in cells) {
       cell.notes.clear();
     }
@@ -96,7 +97,25 @@ class GameState extends ChangeNotifier {
   }
 
   void startNewGame() {
-    _logic.generatePuzzle();
+    print("new game");
+    resetGameData(); // Clear existing data first
+
+    // Generate a board of just ones
+    final newBoard = _logic.generateOptimizedBoard();
+
+    for (int i = 0; i < 81; i++) {
+      cells[i].value = newBoard[i].value;
+      cells[i].isOriginal = newBoard[i].isOriginal;
+      cells[i].notes.clear();
+    }
+
+    selectedCell = -1;
+    score = 0;
+    moveCount = 0;
+    hasWon = false;
+    gameTime.value = Duration.zero;
+
+    saveGame(); // Save the initial state
     notifyListeners();
   }
 
@@ -130,7 +149,12 @@ class GameState extends ChangeNotifier {
   }
 
   List<(int, Set<int>)> findHiddenPairs(int position, Constraints constraint) {
-    return SudokuConstraints.findHiddenPairs(position, constraint);
+    return SudokuConstraints.findMatchingNotes(cells, position, constraint);
+  }
+
+  List<(List<int>, Set<int>)> findNakedSets(
+      int position, Constraints constraint) {
+    return SudokuConstraints.findNakedCells(cells, position, constraint);
   }
 
   resetGameData() {
@@ -143,5 +167,43 @@ class GameState extends ChangeNotifier {
   completeValidMove() {
     moveCount++;
     notifyListeners();
+  }
+
+  void handleHiddenPairs(Constraints constraint) {
+    if (selectedCell != -1) {
+      var hiddenPairs = findHiddenPairs(selectedCell, constraint);
+      for (var (position, notes) in hiddenPairs) {
+        cells[position].keepOnlyNotes(notes);
+      }
+      notifyListeners();
+    }
+  }
+
+  void handleNakedSets(Constraints constraint) {
+    if (selectedCell != -1) {
+      var nakedSets = findNakedSets(selectedCell, constraint);
+      for (var (positions, notes) in nakedSets) {
+        var cellsToCheck =
+            SudokuConstraints.getCellsToCheck(cells, selectedCell, constraint);
+        for (var checkPos in cellsToCheck) {
+          if (!positions.contains(checkPos)) {
+            cells[checkPos].deleteOnlyNotes(notes);
+          }
+        }
+      }
+      notifyListeners();
+    }
+  }
+
+  void handleHiddenPairBlock() {
+    handleHiddenPairs(Constraints.box);
+  }
+
+  void handleHiddenPairVertical() {
+    handleHiddenPairs(Constraints.vertical);
+  }
+
+  void handleHiddenPairHorizontal() {
+    handleHiddenPairs(Constraints.horizontal);
   }
 }
