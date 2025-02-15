@@ -12,6 +12,8 @@ class GameState extends ChangeNotifier {
   final SudokuLogic _logic = SudokuLogic();
   final DatabaseHelper _dbHelper = DatabaseHelper();
 
+  final Map<int, Offset> cellBounds = {};
+
   List<Cell> cells = List.generate(81, (index) => Cell(index));
 
   ValueNotifier<Duration> gameTime = ValueNotifier(Duration.zero);
@@ -19,19 +21,89 @@ class GameState extends ChangeNotifier {
   bool isNoteMode = false;
   bool hasWon = false;
 
-  int selectedCell = -1;
+  Set<int> selectedCells = {};
   int score = 0;
   int moveCount = 0;
 
+  bool isDragging = false;
+
   void selectCell(int position) {
-    selectedCell = position;
-    print(SudokuConstraints.isSafe(
-        cells, selectedCell, cells[selectedCell].value));
+    if (!selectedCells.contains(position)) {
+      selectedCells.add(position);
+    } else {
+      selectedCells.remove(position);
+    }
+
+    print(SudokuConstraints.isSafe(cells, position, cells[position].value));
+
+    notifyListeners();
+  }
+
+  resetSelection() {
+    selectedCells.clear();
+    selectedCells.add(-1);
+    notifyListeners();
+  }
+
+  void selectSingleCell(int position) {
+    selectedCells.clear();
+    selectedCells.add(position);
+    notifyListeners();
+  }
+
+  void unselectLastCell() {
+    if (selectedCells.isNotEmpty) {
+      selectedCells.remove(selectedCells.last);
+      notifyListeners();
+    }
+  }
+
+  void selectGrid(int position) {
+    int row = position ~/ 9;
+    int col = position % 9;
+    int boxRow = (row ~/ 3) * 3;
+    int boxCol = (col ~/ 3) * 3;
+
+    clearSelection();
+
+    for (int r = boxRow; r < boxRow + 3; r++) {
+      for (int c = boxCol; c < boxCol + 3; c++) {
+        selectedCells.add(r * 9 + c);
+      }
+    }
+    notifyListeners();
+  }
+
+  // Add helper methods for selection management
+  void clearSelection() {
+    selectedCells.clear();
+    notifyListeners();
+  }
+
+  bool isCellSelected(int position) {
+    return selectedCells.contains(position);
+  }
+
+  void clearCell() {
+    for (int position in selectedCells) {
+      if (!cells[position].isOriginal) {
+        cells[position].clear();
+      }
+    }
     notifyListeners();
   }
 
   void setNumber(int number) {
-    if (selectedCell != -1) {
+    if (selectedCells.isEmpty) return;
+
+    if (isNoteMode) {
+      for (int cellIndex in selectedCells) {
+        cells[cellIndex].toggleNote(number);
+      }
+    } else {
+      int selectedCell = selectedCells.first;
+      selectedCells.clear();
+      selectedCells.add(selectedCell);
       cells[selectedCell].setNumber(number, isNoteMode, cells, this);
       score++;
 
@@ -39,17 +111,10 @@ class GameState extends ChangeNotifier {
         hasWon = true;
         _handleWin();
       }
-
-      saveGame();
-      notifyListeners();
     }
-  }
 
-  void clearCell() {
-    if (selectedCell != -1 && !cells[selectedCell].isOriginal) {
-      cells[selectedCell].clear();
-      notifyListeners();
-    }
+    saveGame();
+    notifyListeners();
   }
 
   void _handleWin() {
@@ -109,7 +174,8 @@ class GameState extends ChangeNotifier {
       cells[i].notes.clear();
     }
 
-    selectedCell = -1;
+    selectedCells.clear();
+    selectedCells.add(-1);
     score = 0;
     moveCount = 0;
     hasWon = false;
@@ -141,7 +207,7 @@ class GameState extends ChangeNotifier {
       }
 
       moveCount = gameData.moveCount;
-      selectedCell = -1;
+      resetSelection();
       hasWon = false;
 
       notifyListeners();
@@ -169,41 +235,17 @@ class GameState extends ChangeNotifier {
     notifyListeners();
   }
 
-  void handleHiddenPairs(Constraints constraint) {
-    if (selectedCell != -1) {
-      var hiddenPairs = findHiddenPairs(selectedCell, constraint);
-      for (var (position, notes) in hiddenPairs) {
-        cells[position].keepOnlyNotes(notes);
-      }
-      notifyListeners();
-    }
-  }
-
-  void handleNakedSets(Constraints constraint) {
-    if (selectedCell != -1) {
-      var nakedSets = findNakedSets(selectedCell, constraint);
-      for (var (positions, notes) in nakedSets) {
-        var cellsToCheck =
-            SudokuConstraints.getCellsToCheck(cells, selectedCell, constraint);
-        for (var checkPos in cellsToCheck) {
-          if (!positions.contains(checkPos)) {
-            cells[checkPos].deleteOnlyNotes(notes);
-          }
-        }
-      }
-      notifyListeners();
-    }
-  }
-
   void handleHiddenPairBlock() {
-    handleHiddenPairs(Constraints.box);
+    handleNotes(Constraints.box);
   }
 
   void handleHiddenPairVertical() {
-    handleHiddenPairs(Constraints.vertical);
+    handleNotes(Constraints.vertical);
   }
 
   void handleHiddenPairHorizontal() {
-    handleHiddenPairs(Constraints.horizontal);
+    handleNotes(Constraints.horizontal);
   }
+
+  void handleNotes(Constraints constraint) {}
 }
