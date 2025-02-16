@@ -10,7 +10,6 @@ environment:
   sdk: ^3.6.2
 
 dependencies:
-  flutter_native_splash: ^2.4.4
   flutter:
     sdk: flutter
   flutter_localizations:
@@ -33,3 +32,4 @@ flutter:
   assets:
     # Add assets from the images directory to the application.
     - assets/images/
+    - assets/sudoku_games.csv

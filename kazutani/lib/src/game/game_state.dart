@@ -6,7 +6,6 @@ import 'game_logic.dart';
 import '../utils/sudoku_constraints.dart';
 import 'cell.dart';
 
-import 'dart:math' as math;
 
 class GameState extends ChangeNotifier {
   final SudokuLogic _logic = SudokuLogic();
@@ -161,12 +160,12 @@ class GameState extends ChangeNotifier {
     notifyListeners();
   }
 
-  void startNewGame() {
+  Future<void> startNewGame() async {
     print("new game");
     resetGameData(); // Clear existing data first
 
-    // Generate a board of just ones
-    final newBoard = _logic.generateOptimizedBoard();
+    // Generate a new game board
+    final newBoard = await _logic.getNewGame();
 
     for (int i = 0; i < 81; i++) {
       cells[i].value = newBoard[i].value;

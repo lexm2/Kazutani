@@ -1,4 +1,3 @@
-import '../game/game_state.dart';
 import '../game/cell.dart';
 
 enum Constraints { horizontal, vertical, box }

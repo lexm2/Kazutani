@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import 'screens/game_screen.dart';
 import 'screens/settings_screen.dart';
+import 'screens/splash_screen.dart';
 import 'settings/settings_controller.dart';
 
 import 'screens/home_screen.dart';
@@ -19,8 +20,8 @@ class MyApp extends StatelessWidget {
         return MaterialApp(
           theme: ThemeData(
             colorScheme: ColorScheme.light(
-              primary: Colors.blue,
-              secondary: Colors.blueAccent,
+              primary: Color(0xFFFFB7C5), // Light sakura pink
+              secondary: Color(0xFFFFC9D4), // Lighter sakura pink
               surface: Colors.white,
               onPrimary: Colors.white,
               onSecondary: Colors.white,
@@ -29,16 +30,16 @@ class MyApp extends StatelessWidget {
           ),
           darkTheme: ThemeData(
             colorScheme: ColorScheme.dark(
-              primary: Colors.blueGrey,
-              secondary: Colors.blueGrey[300]!,
-              surface: Colors.grey[800]!,
+              primary: Color(0xFFFF8FA5), // Deeper sakura pink
+              secondary: Colors.grey[300]!, // Light grey
+              surface: Colors.black,
               onPrimary: Colors.white,
-              onSecondary: Colors.white,
+              onSecondary: Colors.black,
               onSurface: Colors.white,
             ),
           ),
           themeMode: settingsController.themeMode,
-          home: HomeScreen(),
+          home: SplashScreen(),
           routes: {
             '/game': (context) => GameScreen(),
             '/settings': (context) => SettingsScreen(

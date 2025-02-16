@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../game/game_state.dart';
-import 'dart:math' as math;
 
 class GameScreen extends StatefulWidget {
   const GameScreen({super.key});
