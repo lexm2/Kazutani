@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'package:sqflite/sqflite.dart';
 import 'package:path/path.dart';
 import '../game/cell.dart';
+import '../game/game_state.dart';
 import 'game_data.dart';
 
 class DatabaseHelper {
@@ -64,20 +65,18 @@ class DatabaseHelper {
   }
 
   Future<int> saveGameState({
-    required List<Cell> cells,
+    required BoardState boardState,
     required int moveCount,
     bool isCompleted = false,
   }) async {
     final db = await database;
 
     return await db.insert('game_states', {
-      'board_data': json.encode(cells
-          .map((c) => {
-                'value': c.value,
-                'isOriginal': c.isOriginal,
-                'notes': c.notes.toList(),
-              })
-          .toList()),
+      'board_data': json.encode({
+        'values': boardState.values,
+        'isOriginal': boardState.isOriginal,
+        'notes': boardState.notes.map((notes) => notes.toList()).toList(),
+      }),
       'move_count': moveCount,
       'created_at': DateTime.now().millisecondsSinceEpoch,
       'last_played_at': DateTime.now().millisecondsSinceEpoch,
@@ -96,15 +95,14 @@ class DatabaseHelper {
     if (results.isEmpty || results.first['board_data'] == null) return null;
 
     final data = results.first;
-    final boardData = json.decode(data['board_data'] as String) as List;
+    final boardData = json.decode(data['board_data'] as String);
 
     List<Cell> cells = List.generate(81, (i) {
-      final cellData = boardData[i];
       return Cell(
         i,
-        value: cellData['value'],
-        isOriginal: cellData['isOriginal'],
-        notes: Set<int>.from(cellData['notes']),
+        value: boardData['values'][i],
+        isOriginal: boardData['isOriginal'][i],
+        notes: Set<int>.from(boardData['notes'][i]),
       );
     });
 
