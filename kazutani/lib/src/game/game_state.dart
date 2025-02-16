@@ -2,13 +2,13 @@ import '../database/database_helper.dart';
 import '../database/game_data.dart';
 import 'package:flutter/material.dart';
 import 'package:kazutani/src/app.dart';
-import 'game_logic.dart';
+import 'game_manager.dart';
 import '../utils/sudoku_constraints.dart';
 import 'cell.dart';
 
 
 class GameState extends ChangeNotifier {
-  final SudokuLogic _logic = SudokuLogic();
+  final GameManager _logic = GameManager();
   final DatabaseHelper _dbHelper = DatabaseHelper();
 
   final Map<int, Offset> cellBounds = {};
@@ -93,7 +93,7 @@ class GameState extends ChangeNotifier {
   }
 
   void setNumber(int number) {
-    if (selectedCells.isEmpty) return;
+    if (selectedCells.isEmpty || selectedCells.length >= cells.length) return;
 
     if (isNoteMode) {
       for (int cellIndex in selectedCells) {

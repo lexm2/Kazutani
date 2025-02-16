@@ -21,10 +21,10 @@ class DatabaseHelper {
   Future<Database> _initDatabase() async {
     String path = join(await getDatabasesPath(), 'kazutani.db');
 
-    if (await databaseExists(path)) {
-      await deleteDatabase(path);
-      print('Database deleted');
-    }
+    // if (await databaseExists(path)) {
+    //   await deleteDatabase(path);
+    //   print('Database deleted');
+    // }
 
     return await openDatabase(
       path,
