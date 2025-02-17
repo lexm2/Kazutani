@@ -96,22 +96,13 @@ class GameState extends ChangeNotifier {
   void setNumber(int number) {
     if (selectedCells.isEmpty) return;
 
-    print("Current board before move:");
-    print(currentBoard.cells.map((c) => c.value).toList());
-
     BoardState newState = currentBoard.copyBoard();
-
-    print("New board state after copy:");
-    print(newState.cells.map((c) => c.value).toList());
-
     if (isNoteMode) {
       for (int cellIndex in selectedCells) {
         if (!newState.cells[cellIndex].isOriginal) {
           if (newState.cells[cellIndex].notes.contains(number)) {
-            print("Removing note $number from cell $cellIndex");
             newState.cells[cellIndex].notes.remove(number);
           } else {
-            print("Adding note $number to cell $cellIndex");
             newState.cells[cellIndex].notes.add(number);
           }
           score += MOVE_SCORES['note_toggle']!;
@@ -119,25 +110,18 @@ class GameState extends ChangeNotifier {
       }
     } else {
       for (int cellIndex in selectedCells) {
-        print("Attempting to place $number in cell $cellIndex");
         var validationResult =
             SudokuConstraints.validateMove(newState.cells, cellIndex, number);
-        print("Validation result: ${validationResult.isValid}");
-        print("Conflicts: ${validationResult.conflicts}");
 
         if (validationResult.isValid) {
-          print("Valid move - setting value");
           newState.cells[cellIndex].value = number;
           newState.cells[cellIndex].notes.clear();
           score += MOVE_SCORES['valid_placement']!;
           completeValidMove();
         } else {
-          print("Invalid move - processing conflicts");
           for (var conflict in validationResult.conflicts) {
             if (!newState.cells[conflict.position].isOriginal) {
               int previousNumber = newState.cells[conflict.position].value;
-              print(
-                  "Converting cell ${conflict.position} value $previousNumber to note");
               newState.cells[conflict.position].value = 0;
               newState.cells[conflict.position].notes.add(previousNumber);
             }
@@ -147,20 +131,14 @@ class GameState extends ChangeNotifier {
       }
     }
 
-    print("Board state before history update:");
-    print(newState.cells.map((c) => c.value).toList());
 
     if (currentMoveIndex < boardHistory.length - 1) {
-      print("Trimming history from index ${currentMoveIndex + 1}");
       boardHistory.removeRange(currentMoveIndex + 1, boardHistory.length);
     }
 
     boardHistory.add(newState);
     currentMoveIndex++;
     moveCount++;
-
-    print("Final board state:");
-    print(currentBoard.cells.map((c) => c.value).toList());
 
     saveGame();
     notifyListeners();
