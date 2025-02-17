@@ -51,6 +51,14 @@ class GameScreenState extends State<GameScreen> {
       appBar: AppBar(
         actions: [
           IconButton(
+            icon: Icon(Icons.undo),
+            onPressed: () => context.read<GameState>().undo(),
+          ),
+          IconButton(
+            icon: Icon(Icons.redo),
+            onPressed: () => context.read<GameState>().redo(),
+          ),
+          IconButton(
             icon: Icon(Icons.refresh),
             onPressed: () => gameState.startNewGame(),
           ),
