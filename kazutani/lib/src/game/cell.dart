@@ -34,35 +34,9 @@ class Cell {
     value = numbers[index];
   }
 
-  // @returns the net score for the move
-  int setNumber(
-      int number, bool isNoteMode, List<Cell> cells, GameState gameState) {
-    print("isOriginal: $isOriginal");
-    if (isOriginal) return 100;
-
-    if (isNoteMode) {
-      toggleNote(number);
-      return 1;
-    }
-    var validationResult = SudokuConstraints.validateMove(cells, position, number);
-    if (validationResult.isValid) {
-      gameState.completeValidMove();
-      setValue(number);
-    } else if (validationResult.conflicts.isNotEmpty) {
-      addNote(number);
-      for (var conflict in validationResult.conflicts) {
-        if (cells[conflict.position].isOriginal) continue;
-        int previousNumber = cells[conflict.position].value;
-        cells[conflict.position].clear();
-        cells[conflict.position].addNote(previousNumber);
-      }
-    }
-
-    return 18;
-  }
-
-  bool setNumberConstrantsOnly(List<Cell> cells, int number) {
-    var validationResult = SudokuConstraints.validateMove(cells, position, number);
+  bool setNumberConstraintsOnly(List<Cell> cells, int number) {
+    var validationResult =
+        SudokuConstraints.validateMove(cells, position, number);
 
     if (validationResult.isValid) {
       setValue(number);

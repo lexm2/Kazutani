@@ -52,7 +52,7 @@ class GameScreenState extends State<GameScreen> {
         actions: [
           IconButton(
             icon: Icon(Icons.refresh),
-            onPressed: () => gameState.resetGame(),
+            onPressed: () => gameState.startNewGame(),
           ),
         ],
       ),
@@ -123,9 +123,10 @@ class GameScreenState extends State<GameScreen> {
 
   Widget _buildCell(BuildContext context, int cellIndex) {
     final gameState = context.watch<GameState>();
-    final value = gameState.currentBoard.values[cellIndex];
-    final isOriginal = gameState.currentBoard.isOriginal[cellIndex];
-    final notes = gameState.currentBoard.notes[cellIndex];
+    final cell = gameState.currentBoard.cells[cellIndex];
+    final value = cell.value;
+    final isOriginal = cell.isOriginal;
+    final notes = cell.notes;
     final isSelected = gameState.selectedCells.contains(cellIndex);
 
     return Container(

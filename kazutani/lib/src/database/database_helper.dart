@@ -72,11 +72,13 @@ class DatabaseHelper {
     final db = await database;
 
     return await db.insert('game_states', {
-      'board_data': json.encode({
-        'values': boardState.values,
-        'isOriginal': boardState.isOriginal,
-        'notes': boardState.notes.map((notes) => notes.toList()).toList(),
-      }),
+      'board_data': json.encode(boardState.cells
+          .map((c) => {
+                'value': c.value,
+                'isOriginal': c.isOriginal,
+                'notes': c.notes.toList(),
+              })
+          .toList()),
       'move_count': moveCount,
       'created_at': DateTime.now().millisecondsSinceEpoch,
       'last_played_at': DateTime.now().millisecondsSinceEpoch,

@@ -2,26 +2,36 @@ import '../database/database_helper.dart';
 import '../database/game_data.dart';
 import 'package:flutter/material.dart';
 import 'package:kazutani/src/app.dart';
-import 'cell.dart';
 import 'game_manager.dart';
 import '../utils/sudoku_constraints.dart';
+import 'cell.dart';
 
 class BoardState {
-  final List<int> values;
-  final List<bool> isOriginal;
-  final List<Set<int>> notes;
+  final List<Cell> cells;
 
-  BoardState({
-    required this.values,
-    required this.isOriginal,
-    required this.notes,
-  });
+  BoardState({required this.cells});
 
-  BoardState.copy(BoardState other)
-      : values = List.from(other.values),
-        isOriginal = List.from(other.isOriginal),
-        notes = List.from(other.notes.map((s) => Set<int>.from(s)));
+  BoardState copyBoard() {
+    var newState = BoardState(
+        cells: List.generate(
+      81,
+      (i) => Cell(
+        i,
+        value: cells[i].value,
+        isOriginal: cells[i].isOriginal,
+        notes: Set<int>.from(cells[i].notes),
+      ),
+    ));
+    return newState;
+  }
 }
+
+const Map<String, int> MOVE_SCORES = {
+  'valid_placement': 18,
+  'note_toggle': 1,
+  'invalid_move': -5,
+  'original_cell': 0,
+};
 
 class GameState extends ChangeNotifier {
   final GameManager _logic = GameManager();
@@ -29,6 +39,7 @@ class GameState extends ChangeNotifier {
 
   List<BoardState> boardHistory = [];
   int currentMoveIndex = -1;
+  int score = 0;
 
   ValueNotifier<Duration> gameTime = ValueNotifier(Duration.zero);
   bool isNoteMode = false;
@@ -41,9 +52,7 @@ class GameState extends ChangeNotifier {
   BoardState get currentBoard {
     if (currentMoveIndex < 0 || boardHistory.isEmpty) {
       return BoardState(
-        values: List.filled(81, 0),
-        isOriginal: List.filled(81, false),
-        notes: List.generate(81, (_) => <int>{}),
+        cells: List.generate(81, (i) => Cell(0)),
       );
     }
     return boardHistory[currentMoveIndex];
@@ -87,27 +96,62 @@ class GameState extends ChangeNotifier {
   void setNumber(int number) {
     if (selectedCells.isEmpty) return;
 
-    BoardState newState = BoardState.copy(currentBoard);
+    print("Current board before move:");
+    print(currentBoard.cells.map((c) => c.value).toList());
+
+    BoardState newState = currentBoard.copyBoard();
+
+    print("New board state after copy:");
+    print(newState.cells.map((c) => c.value).toList());
 
     if (isNoteMode) {
       for (int cellIndex in selectedCells) {
-        if (!newState.isOriginal[cellIndex]) {
-          if (newState.notes[cellIndex].contains(number)) {
-            newState.notes[cellIndex].remove(number);
+        if (!newState.cells[cellIndex].isOriginal) {
+          if (newState.cells[cellIndex].notes.contains(number)) {
+            print("Removing note $number from cell $cellIndex");
+            newState.cells[cellIndex].notes.remove(number);
           } else {
-            newState.notes[cellIndex].add(number);
+            print("Adding note $number to cell $cellIndex");
+            newState.cells[cellIndex].notes.add(number);
           }
+          score += MOVE_SCORES['note_toggle']!;
         }
       }
     } else {
-      int selectedCell = selectedCells.first;
-      if (!newState.isOriginal[selectedCell]) {
-        newState.values[selectedCell] = number;
-        newState.notes[selectedCell].clear();
+      for (int cellIndex in selectedCells) {
+        print("Attempting to place $number in cell $cellIndex");
+        var validationResult =
+            SudokuConstraints.validateMove(newState.cells, cellIndex, number);
+        print("Validation result: ${validationResult.isValid}");
+        print("Conflicts: ${validationResult.conflicts}");
+
+        if (validationResult.isValid) {
+          print("Valid move - setting value");
+          newState.cells[cellIndex].value = number;
+          newState.cells[cellIndex].notes.clear();
+          score += MOVE_SCORES['valid_placement']!;
+          completeValidMove();
+        } else {
+          print("Invalid move - processing conflicts");
+          for (var conflict in validationResult.conflicts) {
+            if (!newState.cells[conflict.position].isOriginal) {
+              int previousNumber = newState.cells[conflict.position].value;
+              print(
+                  "Converting cell ${conflict.position} value $previousNumber to note");
+              newState.cells[conflict.position].value = 0;
+              newState.cells[conflict.position].notes.add(previousNumber);
+            }
+          }
+          score += MOVE_SCORES['invalid_move']!;
+        }
       }
     }
 
+    print("Board state before history update:");
+    print(newState.cells.map((c) => c.value).toList());
+
     if (currentMoveIndex < boardHistory.length - 1) {
+      print("Trimming history from index ${currentMoveIndex + 1}");
       boardHistory.removeRange(currentMoveIndex + 1, boardHistory.length);
     }
 
@@ -115,13 +159,20 @@ class GameState extends ChangeNotifier {
     currentMoveIndex++;
     moveCount++;
 
-    if (SudokuConstraints.isGameComplete(
-        newState.values.map((value) => Cell(value)).toList())) {
-      hasWon = true;
-      _handleWin();
-    }
+    print("Final board state:");
+    print(currentBoard.cells.map((c) => c.value).toList());
 
     saveGame();
+    notifyListeners();
+  }
+
+  void setBoardState(BoardState newState) {
+    if (currentMoveIndex < boardHistory.length - 1) {
+      boardHistory.removeRange(currentMoveIndex + 1, boardHistory.length);
+    }
+
+    boardHistory.add(newState);
+    currentMoveIndex++;
     notifyListeners();
   }
 
@@ -143,9 +194,7 @@ class GameState extends ChangeNotifier {
     final newBoard = await _logic.getNewGame();
 
     BoardState initialState = BoardState(
-      values: List.generate(81, (i) => newBoard[i].value),
-      isOriginal: List.generate(81, (i) => newBoard[i].isOriginal),
-      notes: List.generate(81, (i) => <int>{}),
+      cells: List.generate(81, (i) => newBoard[i]),
     );
 
     boardHistory = [initialState];
@@ -154,9 +203,25 @@ class GameState extends ChangeNotifier {
     moveCount = 0;
     hasWon = false;
     gameTime.value = Duration.zero;
+    score = 0;
 
     saveGame();
     notifyListeners();
+  }
+
+  void resetGame() {
+    if (boardHistory.isNotEmpty) {
+      boardHistory = [boardHistory[0]];
+      currentMoveIndex = 0;
+      selectedCells.clear();
+      moveCount = 0;
+      hasWon = false;
+      gameTime.value = Duration.zero;
+      score = 0;
+      notifyListeners();
+    } else {
+      startNewGame();
+    }
   }
 
   void toggleNoteMode() {
@@ -176,9 +241,7 @@ class GameState extends ChangeNotifier {
     final GameData? gameData = await _dbHelper.loadLatestGame();
     if (gameData != null) {
       BoardState loadedState = BoardState(
-        values: List.generate(81, (i) => gameData.cells[i].value),
-        isOriginal: List.generate(81, (i) => gameData.cells[i].isOriginal),
-        notes: List.generate(81, (i) => gameData.cells[i].notes),
+        cells: gameData.cells,
       );
 
       boardHistory = [loadedState];
@@ -201,6 +264,7 @@ class GameState extends ChangeNotifier {
             children: [
               Text('You completed the puzzle!'),
               Text('Moves: $moveCount'),
+              Text('Score: $score'),
               SizedBox(height: 16),
               Text(
                   'Game Time: ${gameTime.value.inMinutes}:${(gameTime.value.inSeconds.remainder(60)).toString().padLeft(2, '0')}'),
@@ -228,12 +292,12 @@ class GameState extends ChangeNotifier {
   }
 
   void clearCell() {
-    BoardState newState = BoardState.copy(currentBoard);
+    BoardState newState = currentBoard.copyBoard();
 
     for (int position in selectedCells) {
-      if (!newState.isOriginal[position]) {
-        newState.values[position] = 0;
-        newState.notes[position].clear();
+      if (!newState.cells[position].isOriginal) {
+        newState.cells[position].value = 0;
+        newState.cells[position].notes.clear();
       }
     }
 
@@ -247,21 +311,6 @@ class GameState extends ChangeNotifier {
 
     saveGame();
     notifyListeners();
-  }
-
-  void resetGame() {
-    if (boardHistory.isNotEmpty) {
-      boardHistory = [boardHistory[0]]; // Keep only initial state
-      currentMoveIndex = 0;
-      selectedCells.clear();
-      moveCount = 0;
-      hasWon = false;
-      gameTime.value = Duration.zero;
-      startNewGame();
-      notifyListeners();
-    } else {
-      startNewGame();
-    }
   }
 
   void completeValidMove() {
