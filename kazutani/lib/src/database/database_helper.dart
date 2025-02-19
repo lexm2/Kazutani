@@ -65,26 +65,29 @@ class DatabaseHelper {
   }
 
   Future<int> saveGameState({
-    required BoardState boardState,
-    required int moveCount,
-    bool isCompleted = false,
-  }) async {
-    final db = await database;
+  required BoardState boardState,
+  required int moveCount, 
+  bool isCompleted = false,
+}) async {
+  final db = await database;
+  
+  // Create separate arrays for each cell property
+  final values = boardState.cells.map((c) => c.value).toList();
+  final isOriginal = boardState.cells.map((c) => c.isOriginal).toList();
+  final notes = boardState.cells.map((c) => c.notes.toList()).toList();
 
-    return await db.insert('game_states', {
-      'board_data': json.encode(boardState.cells
-          .map((c) => {
-                'value': c.value,
-                'isOriginal': c.isOriginal,
-                'notes': c.notes.toList(),
-              })
-          .toList()),
-      'move_count': moveCount,
-      'created_at': DateTime.now().millisecondsSinceEpoch,
-      'last_played_at': DateTime.now().millisecondsSinceEpoch,
-      'is_completed': isCompleted ? 1 : 0,
-    });
-  }
+  return await db.insert('game_states', {
+    'board_data': json.encode({
+      'values': values,
+      'isOriginal': isOriginal, 
+      'notes': notes,
+    }),
+    'move_count': moveCount,
+    'created_at': DateTime.now().millisecondsSinceEpoch,
+    'last_played_at': DateTime.now().millisecondsSinceEpoch,
+    'is_completed': isCompleted ? 1 : 0,
+  });
+}
 
   Future<GameData?> loadLatestGame() async {
     final db = await database;

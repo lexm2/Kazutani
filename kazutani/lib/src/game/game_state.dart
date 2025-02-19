@@ -49,6 +49,28 @@ class GameState extends ChangeNotifier {
   bool isDragging = false;
   final Map<int, Offset> cellBounds = {};
 
+  GameState() {
+    _initializeState();
+  }
+
+  Future<void> _initializeState() async {
+    final GameData? lastGame = await _dbHelper.loadLatestGame();
+
+    if (lastGame != null && !lastGame.isCompleted) {
+      BoardState loadedState = BoardState(
+        cells: lastGame.cells,
+      );
+
+      boardHistory = [loadedState];
+      currentMoveIndex = 0;
+      moveCount = lastGame.moveCount;
+      hasWon = lastGame.isCompleted;
+      notifyListeners();
+    } else {
+      await startNewGame();
+    }
+  }
+
   BoardState get currentBoard {
     if (currentMoveIndex < 0 || boardHistory.isEmpty) {
       return BoardState(
@@ -131,7 +153,6 @@ class GameState extends ChangeNotifier {
       }
     }
 
-
     if (currentMoveIndex < boardHistory.length - 1) {
       boardHistory.removeRange(currentMoveIndex + 1, boardHistory.length);
     }
@@ -208,11 +229,20 @@ class GameState extends ChangeNotifier {
   }
 
   void saveGame() {
+    // Save current state
     _dbHelper.saveGameState(
       boardState: currentBoard,
       moveCount: moveCount,
       isCompleted: hasWon,
     );
+
+    // Save board history
+    for (var historicalState in boardHistory) {
+      _dbHelper.saveGameState(
+          boardState: historicalState,
+          moveCount: moveCount,
+          isCompleted: false);
+    }
   }
 
   Future<void> loadLastGame() async {

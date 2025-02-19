@@ -1,4 +1,3 @@
-import 'package:kazutani/src/game/game_state.dart';
 
 import '../utils/sudoku_constraints.dart';
 
