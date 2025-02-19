@@ -7,5 +7,5 @@ class GameManager {
     List<Cell> cells = await SudokuLoader.getRandomGame();
     print('Game loaded successfully!');
     return cells;
-  }
+  }  
 }

@@ -26,6 +26,13 @@ class BoardState {
   }
 }
 
+class Move {
+  final int position;
+  final int number;
+
+  Move(this.position, this.number);
+}
+
 const Map<String, int> MOVE_SCORES = {
   'valid_placement': 18,
   'note_toggle': 1,
@@ -68,6 +75,39 @@ class GameState extends ChangeNotifier {
       notifyListeners();
     } else {
       await startNewGame();
+    }
+  }
+
+  Future<void> solveAsPlayer() async {
+    while (!hasWon) {
+      BoardState currentState = currentBoard.copyBoard();
+      List<Move> nextMoves = [];
+
+      // Find single candidates (cells with only one possible value)
+      for (int pos = 0; pos < 81; pos++) {
+        if (currentState.cells[pos].value == 0) {
+          Set<int> possibilities = {};
+          for (int num = 1; num <= 9; num++) {
+            if (SudokuConstraints.validateMove(currentState.cells, pos, num)
+                .isValid) {
+              possibilities.add(num);
+            }
+          }
+          if (possibilities.length == 1) {
+            nextMoves.add(Move(pos, possibilities.first));
+          }
+        }
+      }
+
+      // Execute found moves with visual feedback
+      for (Move move in nextMoves) {
+        selectSingleCell(move.position);
+        setNumber(move.number);
+        await Future.delayed(const Duration(milliseconds: 500));
+      }
+
+      // Break if no more obvious moves found
+      if (nextMoves.isEmpty) break;
     }
   }
 

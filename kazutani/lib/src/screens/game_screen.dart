@@ -59,6 +59,10 @@ class GameScreenState extends State<GameScreen> {
             onPressed: () => context.read<GameState>().redo(),
           ),
           IconButton(
+            icon: Icon(Icons.auto_fix_high),
+            onPressed: () => context.read<GameState>().solveAsPlayer(),
+          ),
+          IconButton(
             icon: Icon(Icons.refresh),
             onPressed: () => gameState.startNewGame(),
           ),

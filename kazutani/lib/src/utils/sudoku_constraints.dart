@@ -91,50 +91,6 @@ class SudokuConstraints {
     return true;
   }
 
-  static List<(int, Set<int>)> findMatchingNotes(
-      List<Cell> cells, int position, Constraints constraint) {
-    List<(int, Set<int>)> matchingCells = [];
-    Set<int> selectedNotes = cells[position].notes;
-    List<int> cellsToCheck = getCellsToCheck(cells, position, constraint);
-
-    for (var checkPos in cellsToCheck) {
-      if (checkPos == position) continue;
-      var currentNotes = cells[checkPos].notes;
-      var matchingNotes = currentNotes.intersection(selectedNotes);
-      if (matchingNotes.isNotEmpty) {
-        matchingCells.add((checkPos, matchingNotes));
-      }
-    }
-
-    return matchingCells;
-  }
-
-  static List<(List<int>, Set<int>)> findNakedCells(
-      List<Cell> cells, int position, Constraints constraint) {
-    List<(List<int>, Set<int>)> nakedGroups = [];
-    List<int> cellsToCheck = getCellsToCheck(cells, position, constraint);
-
-    // Group cells by their exact note sets
-    Map<Set<int>, List<int>> noteGroups = {};
-
-    for (var checkPos in cellsToCheck) {
-      var currentNotes = cells[checkPos].notes;
-      if (currentNotes.length >= 2) {
-        var noteSet = currentNotes.toSet();
-        noteGroups.putIfAbsent(noteSet, () => []).add(checkPos);
-      }
-    }
-
-    // Find groups where number of positions equals number of notes
-    noteGroups.forEach((notes, positions) {
-      if (positions.length == notes.length) {
-        nakedGroups.add((positions, notes));
-      }
-    });
-
-    return nakedGroups;
-  }
-
   static List<int> getCellsToCheck(
       List<Cell> cells, int position, Constraints constraint) {
     Cell cell = cells[position];
