@@ -153,3 +153,4 @@ app.*.symbols
 kazutani/assets/sudoku_games.csv
 kazutani/android/app/build/outputs/apk/debug/app-debug.apk
 kazutani/assets/videos/kazutani.gif
+assets/sudoku_games.csv
