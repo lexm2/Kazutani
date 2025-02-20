@@ -101,8 +101,7 @@ class GameScreenState extends State<GameScreen> {
                   if (gameState.isDragging) {
                     for (var entry in gameState.cellBounds.entries) {
                       if (isPointerInCell(event.position, entry.value)) {
-                        gameState.selectedCells.add(entry.key);
-                        gameState.notifyListeners(); // Fixes all world problems
+                        gameState.selectCell(entry.key);
                         break;
                       }
                     }
@@ -132,7 +131,6 @@ class GameScreenState extends State<GameScreen> {
       ),
     );
   }
-
   Widget _buildCell(BuildContext context, int cellIndex) {
     final gameState = context.watch<GameState>();
     final cell = gameState.currentBoard.cells[cellIndex];
